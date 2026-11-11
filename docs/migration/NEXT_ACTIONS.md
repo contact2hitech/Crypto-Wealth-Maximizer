@@ -1,50 +1,40 @@
-# Next Actions — Phase 0 Review Gate & Phase 1 Preparation
+# Next Actions — Phase 1 Review Gate & Phase 2 Preparation
 
 ## Authoritative Gate Status
 - **Status**: `AWAITING_EXTERNAL_REVIEW`
-- **Current Phase Completed**: Phase 0 (Repository Audit & Migration Planning)
-- **Next Phase**: Phase 1 (Python Backend and FastAPI Foundation)
-- **Instruction**: Do **not** begin Phase 1 code implementation until GitHub review feedback is posted in this file (or explicit user approval is received to proceed with Phase 1).
+- **Current Phase Completed**: Phase 1 (Python Backend and FastAPI Foundation)
+- **Next Phase**: Phase 2 (Next.js Frontend Foundation)
+- **Instruction**: Do **not** begin Phase 2 frontend implementation until Phase 1 has been reviewed and Phase 2 is authorized in this file (or explicit user approval is received).
 
 ---
 
-## Proposed Phase 1 Scope (Subject to Reviewer Confirmation)
+## Proposed Phase 2 Scope (Subject to Reviewer Confirmation)
 
-When approved to proceed to Phase 1, execute the following tasks on branch `v2.0-nextjs-migration`:
+When approved to proceed to Phase 2, execute the following tasks on branch `v2.0-nextjs-migration`:
 
-1. **Create `backend/` layout**:
-   - `backend/main.py`
-   - `backend/core/config.py` (project-root path resolution, CORS origin configuration via env vars, `sys.path` wiring for root engines)
-   - `backend/core/data_loader.py` (loads `<repo_root>/data/crypto_daily_prices.csv`, runs data-quality validation without mutating or forward-filling missing SOL prices)
-   - `backend/core/serialization.py` (`NaN`/`Inf` -> `None`, `Timestamp`/`date` -> ISO-8601)
-   - `backend/schemas/` (Pydantic v2 request & response models)
-   - `backend/services/` (thin adapters invoking `crypto_engine.py`, `strategy_engine.py`, `optimization_engine.py`, `robustness_engine.py` with deterministic caching)
-   - `backend/api/` (`health.py`, `markets.py`, `backtests.py`, `risk.py`, `robustness.py`, `reports.py`)
-   - `backend/tests/` (FastAPI `TestClient` + v1.0 regression parity tests)
-   - `backend/requirements.txt` (keep root `requirements.txt` untouched for v1.0 Streamlit compatibility)
+1. **Initialize Next.js Frontend (`frontend/`)**:
+   - Next.js (App Router) + React + TypeScript + Tailwind CSS.
+   - Install and configure `shadcn/ui` primitives and Lucide icons.
+   - Establish dark-theme financial research design tokens (deep charcoal/navy surfaces, crisp subtle borders, tabular high-contrast numerical typography, restrained visual polish).
 
-2. **Implement Phase 1 Endpoints**:
-   - `GET /api/health`
-   - `GET /api/markets/prices`
-   - `GET /api/markets/summary`
-   - `POST /api/backtest/compare`
-   - `POST /api/backtest/run`
-   - `POST /api/risk/protection`
-   - `POST /api/robustness/analyze`
-   - `GET /api/reports/summary`
-   *(Plus any practical strategy / perfect-hindsight optimizer / CSV export endpoints mapped cleanly in Phase 1.)*
+2. **Application Shell & Navigation**:
+   - Reusable layout shell (`components/layout/`) with top navigation bar linking all 6 required pages:
+     - `/dashboard` (and `/` redirecting or rendering Dashboard cleanly)
+     - `/markets`
+     - `/strategy-lab`
+     - `/risk-lab`
+     - `/robustness`
+     - `/reports`
+   - Application branding, active route indicator, responsive mobile drawer/menu, live backend API connection status badge (polling/querying `GET /api/health`), and dataset last-update/coverage indicator.
 
-3. **Verification Gate for Phase 1**:
-   - FastAPI starts cleanly (`uvicorn backend.main:app`).
-   - All new backend API & regression parity tests pass.
-   - Existing 26 `unittest` tests (`.\venv\Scripts\python.exe -m unittest discover -s tests -v`) continue to pass (`26/26`).
-   - Zero duplicate datasets, zero secrets committed, v1.0 `streamlit run app.py` preserved.
+3. **Reusable UI Primitives & Typed API Client**:
+   - Reusable metric cards, data-quality badges, research warning banners, loading skeletons, structured error states, and empty states (`components/common/`, `components/dashboard/`).
+   - Environment-configured API base URL (`NEXT_PUBLIC_API_BASE_URL`, defaulting to `http://127.0.0.1:8000` in `.env.example`, never hardcoded production URLs or secrets).
+   - Typed TypeScript interfaces (`frontend/types/`) matching Phase 1 Pydantic response schemas and typed API client (`frontend/lib/api/`) with generous timeouts (`>= 60s` for heavy cold simulation endpoints per `KI-004`).
 
----
-
-## Open Decisions for External Review (from `KNOWN_ISSUES.md`)
-
-1. **`KI-008` (CSV Upload & Live `yfinance` Refresh)**: Confirm that v2.0 backend should read exclusively from the validated canonical `data/crypto_daily_prices.csv` (without exposing server-side `yfinance` write-refresh or arbitrary CSV upload in Phase 1).
-2. **`KI-006` (Sub-range Warm-up)**: When a user filters `start_date > 2016-11-09` in Strategy Lab, should `/api/backtest/run` preserve `app.py`'s global slice behavior (`indicator_history=None`) for strict v1.0 parity, or pass full pre-start history as `indicator_history` (or expose an explicit toggle)?
-3. **Test Runner Preference**: Confirm whether `backend/tests/` should use `unittest` (matching the existing `tests/` suite) or `pytest` alongside `unittest` for the existing 26 tests.
-4. **Endpoint Granularity for Practical Strategies & Hindsight Optimizer**: Confirm whether `POST /api/backtest/compare` / `POST /api/backtest/run` should expose practical strategies (`strategy_engine.run_practical_strategies`) and hindsight optimizer (`crypto_engine.optimal_switching`, explicitly flagged `is_hindsight_upper_bound=True`) via dedicated fields/sub-routes or combined payload modes.
+4. **Phase 2 Verification Gate**:
+   - Frontend starts cleanly (`npm run dev`).
+   - All 6 routes load cleanly on desktop and mobile viewports without runtime or console errors.
+   - Top navigation and live `/api/health` connection status indicator verified against the running FastAPI backend.
+   - Zero hardcoded fake financial figures (`$`, `%`, Sharpe, etc.) anywhere in frontend components.
+   - `npm run lint`, TypeScript typecheck (`tsc --noEmit`), and `npm run build` succeed.
