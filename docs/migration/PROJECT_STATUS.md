@@ -12,7 +12,7 @@
 |---|---|---|---|
 | Phase 0 | Repository audit and migration planning | Completed | Approved (`2026-11-11`) |
 | Phase 1 | Python backend and FastAPI foundation | Completed | Approved (`2026-11-12`) |
-| Phase 2 | Next.js frontend foundation | Completed | Awaiting external review in `NEXT_ACTIONS.md` |
+| Phase 2 | Next.js frontend foundation | Completed (Review Fix Applied) | Awaiting external review in `NEXT_ACTIONS.md` |
 | Phase 3 | Dashboard and Markets integration | Not started | Blocked on Phase 2 review gate |
 | Phase 4 | Strategy Lab, Risk Lab and Robustness | Not started | Pending Phase 3 |
 | Phase 5 | Reports, QA and release preparation | Not started | Pending Phase 4 |
@@ -20,13 +20,14 @@
 
 ## Latest Verification Summary (Observed `2026-11-12`)
 
+- **Frontend Strict Mode Health Lifecycle Unit Tests (`npm test`)**: `3 / 3` passed (`node --test tests/*.test.mts`).
 - **Frontend TypeScript (`npx tsc --noEmit`)**: Passed (exit 0).
 - **Frontend ESLint (`npm run lint`)**: Passed (exit 0).
-- **Frontend Production Build (`npm run build`)**: Passed (Next.js `16.4.6` Turbopack; all 6 routes + `/` built cleanly).
-- **Frontend Dev Runtime (`next dev --port 3000` + FastAPI `:8000`)**: `/` redirects `307 -> /dashboard`; all 6 routes return `200` with `dark` root class and navigation links; `/api/health` CORS returns `200` (`status: "ok"`).
-- **Backend API & Parity `unittest` suite (`backend/tests`)**: `21 / 21` passed (`119.075s`, `OK`).
-- **Existing v1.0 `unittest` suite (`tests`)**: `26 / 26` passed (`77.775s`, `OK`).
-- **v1.0 & Backend Integrity**: Zero backend, engine, CSV, or v1.0 files modified during Phase 2.
+- **Frontend Production Build (`npm run build`)**: Passed (Next.js `16.4.6` Turbopack; `10/10` static pages).
+- **Interactive Playwright Browser Verification (Headless Microsoft Edge, `reactStrictMode: true`)**: Passed (`0` console/page errors; `API Connected` after Strict Mode mount; `0` duplicate `/api/health` calls across all 6 desktop routes; `API Offline` on FastAPI stop; `API Connected` after restart + Retry; mobile `390x844` drawer open/close/navigate + `aria-*` + `0` horizontal overflow).
+- **Backend API & Parity `unittest` suite (`backend/tests`)**: `21 / 21` passed (`175.591s`, `OK`).
+- **Existing v1.0 `unittest` suite (`tests`)**: `26 / 26` passed (`123.222s`, `OK`).
+- **v1.0 & Backend Integrity**: Zero backend, engine, CSV, or v1.0 files modified.
 
 ## Migration Documentation Index
 - [MASTER_MIGRATION_PLAN.md](./MASTER_MIGRATION_PLAN.md)
