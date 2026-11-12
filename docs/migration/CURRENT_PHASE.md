@@ -1,23 +1,23 @@
-# Current Phase — Phase 1: Python Backend and FastAPI Foundation
+# Current Phase — Phase 2: Next.js Frontend Foundation
 
-- **Phase**: `PHASE 1`
-- **Status**: `COMPLETED (Awaiting Review Gate before Phase 2)`
+- **Phase**: `PHASE 2`
+- **Status**: `COMPLETED (Awaiting Review Gate before Phase 3)`
 - **Branch**: `v2.0-nextjs-migration`
-- **Authorized By**: External Technical Review (`Phase 0 Approved`, `2026-11-11`)
+- **Authorized By**: External Technical Review (`Phase 1 Approved`, `2026-11-12`)
 
-## Phase 1 Objective
-Build a modular, production-structured FastAPI backend under `backend/` wrapping the existing v1.0 Python calculation engines (`crypto_engine.py`, `strategy_engine.py`, `optimization_engine.py`, `robustness_engine.py`) without rewriting financial logic or altering v1.0 files.
+## Phase 2 Objective
+Initialize the `frontend/` Next.js App Router application with TypeScript, Tailwind CSS, `shadcn/ui`, Lucide icons, and Recharts; establish a restrained dark financial research dashboard theme, reusable top navigation across all six routes (`/dashboard`, `/markets`, `/strategy-lab`, `/risk-lab`, `/robustness`, `/reports` with `/` redirecting to `/dashboard`), typed API client using `NEXT_PUBLIC_API_BASE_URL` with `>= 60s` timeouts, live `/api/health` connection indicator, reusable UI states/cards/tables/chart containers, and zero hardcoded mock financial figures.
 
 ## Task Checklist
-- [x] Create `backend/requirements.txt`, `backend/.env.example`, `backend/README.md`, and modular `backend/` package structure.
-- [x] Implement `backend/core/` (`config.py`, `data_loader.py`, `serialization.py`, `exceptions.py`).
-- [x] Implement `backend/schemas/` for health, markets, backtests, risk, robustness, and reports.
-- [x] Implement `backend/services/` wrapping existing Python engines with thread-safe bounded LRU caching (`BoundedResponseCache` returning deep copies).
-- [x] Implement synchronous `def` FastAPI routes (`health`, `markets`, `backtests`, `risk`, `robustness`, `reports`) and `backend/main.py` with explicit CORS and safe exception handlers.
-- [x] Implement `backend/tests/` (`21` `unittest` + `TestClient` tests covering validation, strict JSON serialization, data loading, cache isolation, CORS, and numerical parity with v1.0).
-- [x] Verify live Uvicorn startup from root and `backend/` CWD, verify all `21` backend tests pass, verify all `26` existing v1.0 tests pass, and confirm Streamlit v1.0 remains intact.
-- [x] Measure cold & warm API response times and document everything in `PHASE_01_REPORT.md` and `TEST_RESULTS.md`.
+- [x] Scaffold `frontend/` with Next.js `16.4.6` App Router, React `19.3.0`, TypeScript, Tailwind CSS v4, `shadcn/ui`, Lucide icons, and Recharts.
+- [x] Configure `frontend/.env.example` (`NEXT_PUBLIC_API_BASE_URL`) and `frontend/.gitignore` (`!.env.example` retained, `.env*` / `node_modules` / `.next` ignored).
+- [x] Establish dark charcoal/navy financial design tokens and tabular numeric typography (`globals.css`, `layout.tsx`).
+- [x] Build shared layout shell (`AppShell`, `TopNav` with responsive mobile drawer, live `ApiStatusBadge` querying `GET /api/health` via shared `ApiHealthProvider`).
+- [x] Build typed API contracts (`frontend/types/api.ts`) and typed client (`frontend/lib/api/`) with `60s` standard / `90s` heavy simulation timeouts.
+- [x] Build reusable UI components (`MetricCard`, `LoadingState`/`Skeleton`, `ErrorState`, `EmptyState`, `DataQualityBadge`, `ResearchWarningBanner`, `ChartContainer`, `DataTable`, `shadcn/ui` primitives).
+- [x] Implement all 6 routes (`/dashboard`, `/markets`, `/strategy-lab`, `/risk-lab`, `/robustness`, `/reports`) + `/` redirect without any fabricated financial figures.
+- [x] Verify `npm run dev`, `npx tsc --noEmit`, `npm run lint`, `npm run build`, live `/api/health` CORS, `backend/tests` (`21/21`), and `tests` (`26/26`).
 
 ## Exit Gate Status
-- All 11 Phase 1 acceptance criteria verified and met.
-- Paused here after pushing to `v2.0-nextjs-migration` to wait for GitHub review in `docs/migration/NEXT_ACTIONS.md` before beginning Phase 2.
+- Phase 2 acceptance criteria verified.
+- Paused here after pushing to `v2.0-nextjs-migration` to wait for external technical review in `docs/migration/NEXT_ACTIONS.md` before starting Phase 3.

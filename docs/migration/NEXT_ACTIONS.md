@@ -1,40 +1,30 @@
-# Next Actions — Phase 1 Review Gate & Phase 2 Preparation
+# Next Actions — Phase 2 Review Gate & Phase 3 Preparation
 
 ## Authoritative Gate Status
 - **Status**: `AWAITING_EXTERNAL_REVIEW`
-- **Current Phase Completed**: Phase 1 (Python Backend and FastAPI Foundation)
-- **Next Phase**: Phase 2 (Next.js Frontend Foundation)
-- **Instruction**: Do **not** begin Phase 2 frontend implementation until Phase 1 has been reviewed and Phase 2 is authorized in this file (or explicit user approval is received).
+- **Current Phase Completed**: Phase 2 (Next.js Frontend Foundation)
+- **Next Phase**: Phase 3 (Dashboard and Markets Integration)
+- **Instruction**: Do **not** begin Phase 3 integration until Phase 2 has been reviewed and Phase 3 is authorized in this file (or explicit user approval is received).
 
 ---
 
-## Proposed Phase 2 Scope (Subject to Reviewer Confirmation)
+## Proposed Phase 3 Scope (Subject to Reviewer Confirmation)
 
-When approved to proceed to Phase 2, execute the following tasks on branch `v2.0-nextjs-migration`:
+When approved to proceed to Phase 3, execute the following tasks on branch `v2.0-nextjs-migration`:
 
-1. **Initialize Next.js Frontend (`frontend/`)**:
-   - Next.js (App Router) + React + TypeScript + Tailwind CSS.
-   - Install and configure `shadcn/ui` primitives and Lucide icons.
-   - Establish dark-theme financial research design tokens (deep charcoal/navy surfaces, crisp subtle borders, tabular high-contrast numerical typography, restrained visual polish).
+1. **Dashboard Integration (`/dashboard`)**:
+   - Connect to `POST /api/backtest/run` using the v1.0 reference configuration (`Strategy A: 90-day momentum`, `$1,480`, `Monthly`, `30` min hold, `10%` threshold, `10 bps` fee, `20%` DD protection, `0%` recovery, `Invest immediately in Bitcoin`) with selector controls for strategy/initialization or live refresh.
+   - Display backend-computed KPIs: initial capital, final portfolio value, total return, CAGR, maximum drawdown, Sharpe ratio (`rf=0`), switches, cash days, and active configuration summary.
+   - Render Recharts equity curve vs buy-and-hold benchmark comparison (`Bitcoin`, `Ethereum`, `Solana`), daily underwater drawdown chart, current/selected asset allocation summary, historical market overview, and research warnings.
+   - Downsample or cleanly window dense 3,653-point chart arrays strictly for responsive SVG rendering without altering any backend numbers or calculating metrics in TypeScript.
 
-2. **Application Shell & Navigation**:
-   - Reusable layout shell (`components/layout/`) with top navigation bar linking all 6 required pages:
-     - `/dashboard` (and `/` redirecting or rendering Dashboard cleanly)
-     - `/markets`
-     - `/strategy-lab`
-     - `/risk-lab`
-     - `/robustness`
-     - `/reports`
-   - Application branding, active route indicator, responsive mobile drawer/menu, live backend API connection status badge (polling/querying `GET /api/health`), and dataset last-update/coverage indicator.
+2. **Markets Integration (`/markets`)**:
+   - Connect to `GET /api/markets/prices` and `GET /api/markets/summary`.
+   - Render latest close cards (`Bitcoin`, `Ethereum`, `Solana`), date-range controls (`start_date`, `end_date`), historical USD price chart, individual normalized performance (`100 = first observation`), common-start three-asset comparison (`2020-04-10 = 100`), crossover table, buy-and-hold summary table, and per-asset data quality audit table (`valid_observations`, `missing_observations`, `non_positive_prices`, `outliers_over_50pct`).
+   - Preserve `null` pre-`2020-04-10` Solana points cleanly (`connectNulls={false}` in Recharts) with explicit pre-launch disclosure.
 
-3. **Reusable UI Primitives & Typed API Client**:
-   - Reusable metric cards, data-quality badges, research warning banners, loading skeletons, structured error states, and empty states (`components/common/`, `components/dashboard/`).
-   - Environment-configured API base URL (`NEXT_PUBLIC_API_BASE_URL`, defaulting to `http://127.0.0.1:8000` in `.env.example`, never hardcoded production URLs or secrets).
-   - Typed TypeScript interfaces (`frontend/types/`) matching Phase 1 Pydantic response schemas and typed API client (`frontend/lib/api/`) with generous timeouts (`>= 60s` for heavy cold simulation endpoints per `KI-004`).
-
-4. **Phase 2 Verification Gate**:
-   - Frontend starts cleanly (`npm run dev`).
-   - All 6 routes load cleanly on desktop and mobile viewports without runtime or console errors.
-   - Top navigation and live `/api/health` connection status indicator verified against the running FastAPI backend.
-   - Zero hardcoded fake financial figures (`$`, `%`, Sharpe, etc.) anywhere in frontend components.
-   - `npm run lint`, TypeScript typecheck (`tsc --noEmit`), and `npm run build` succeed.
+3. **Phase 3 Verification Gate**:
+   - All Dashboard & Markets figures match FastAPI / v1.0 backend responses identically.
+   - Date-range filtering works end-to-end and handles invalid/empty ranges gracefully.
+   - Loading, error, and empty states verified; zero mock financial figures remain.
+   - `npx tsc --noEmit`, `npm run lint`, `npm run build`, `backend/tests` (`21`), and `tests` (`26`) all pass.
