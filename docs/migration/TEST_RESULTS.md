@@ -4,55 +4,61 @@ All results below were directly executed and observed in the local environment (
 
 ---
 
-## Phase 2 Review Corrections Verification (`2026-11-12`)
+## Phase 3 Verification (Dashboard and Markets Integration, `2026-11-12`)
 
-### 1. Frontend Strict Mode Health Lifecycle Unit Tests (`npm test`)
+### 1. Frontend Unit Tests (`npm test`)
 Command (inside `frontend/`):
 ```powershell
 npm test   # runs: node --test tests/*.test.mts
 ```
-Result: **PASS (`3 / 3` tests in `2.288s`)**:
-- `React Strict Mode setup -> cleanup -> setup aborts req 1 and completes req 2 cleanly` — PASS
-- `Stale request finally/resolution cannot clobber newer active request or state` — PASS
-- `Deduplicates simultaneous calls and transitions connected -> offline -> checking -> connected on retry` — PASS
+Result: **PASS (`6 / 6` tests in `424.78ms`)**:
+- `healthLifecycle.test.mts` (`3 / 3`): Strict Mode lifecycle, stale request protection, deduplication & offline/retry recovery.
+- `phase3Helpers.test.mts` (`3 / 3`):
+  - `REFERENCE_BACKTEST_CONFIG matches v1.0 FINAL_RESEARCH_REPORT reference settings`
+  - `downsampleByExtrema preserves endpoints, series onset, and peak/trough extrema`
+  - `financial formatters return em-dash for null/non-finite values and format numbers cleanly`
 
 ### 2. Frontend TypeScript, ESLint, and Production Build (`frontend/`)
-Commands:
-```powershell
-npx tsc --noEmit
-npm run lint
-npm run build
-```
-Results:
 - `npx tsc --noEmit`: **PASS (exit code 0)**
 - `npm run lint`: **PASS (exit code 0)**
-- `npm run build`: **PASS (`Next.js 16.4.6 Turbopack`, compiled in `4.8s`, TypeScript in `8.1s`, `10/10` static pages generated in `1268ms`)**
+- `npm run build`: **PASS (`Next.js 16.4.6 Turbopack`, compiled in `11.1s`, TypeScript in `9.6s`, `10/10` static pages generated in `1718ms`)**
 
-### 3. Interactive Playwright Browser Verification (Headless Microsoft Edge, `reactStrictMode: true`)
+### 3. Live Playwright End-to-End Integration Verification (Headless Microsoft Edge, `reactStrictMode: true`)
+Command:
+```powershell
+node C:\Users\Hitesh\.gemini\antigravity\brain\2ff53d6f-97c7-4886-ab62-f8c3e7b21c0c\scratch\pw\verify_phase3.mjs
+```
 Executed against live `uvicorn backend.main:app --port 8000` and `npm --prefix frontend run dev -- --port 3000`:
-- Initial `http://localhost:3000/` redirected to `/dashboard` and resolved `/api/health` cleanly under React Strict Mode (`#1` aborted by Strict Mode cleanup, `#2` completed -> **`API Connected`** badge visible).
-- Desktop (`1280x800`) `<nav aria-label="Primary navigation">` displayed all 6 links (`Dashboard`, `Markets`, `Strategy Lab`, `Risk Lab`, `Robustness`, `Reports`); clicking across all 6 routes updated URLs and `aria-current="page"` while firing **0 duplicate `/api/health` requests** (`2 -> 2`).
-- Terminating FastAPI transitioned the badge via the `20s` background poll to **`API Offline`**.
-- Restarting FastAPI and clicking `button[aria-label="Retry API health check"]` transitioned the badge back to **`API Connected`**.
-- Mobile (`390x844`): desktop nav hidden, menu button (`aria-controls="mobile-primary-nav"`, `aria-label="Open navigation menu"`, `aria-expanded="false"`) toggled open (`aria-expanded="true"`, `aria-label="Close navigation menu"`), all 6 links accessible in `nav[aria-label="Mobile navigation"]`, selecting `Markets` navigated to `/markets` and closed the drawer (`aria-expanded="false"`), zero horizontal overflow on desktop and mobile (`scrollWidth <= innerWidth`), **`0` uncaught page errors and `0` console errors** during connected flow.
-- Visual screenshots inspected: `desktop_dashboard.png`, `mobile_menu_open.png`, `mobile_markets.png` (stored in scratch directory).
+- **Dashboard (`/dashboard`)**:
+  - `/` redirected to `/dashboard`; `API Connected` badge appeared cleanly.
+  - All backend-computed KPIs rendered and reconciled: `$1,480.00` initial capital, `$585,970.46` final value, `39,492.60%` total return, `81.89%` CAGR, `-69.94%` max drawdown, `68.43%` volatility, `1.21` Sharpe, `95 / 1,830` switches / cash days.
+  - Benchmark comparison table rendered `Buy & hold: Bitcoin` (`$152,438.67`), `Buy & hold: Ethereum`, and `Buy & hold: Solana`.
+  - Both Recharts `<svg>` charts rendered curves cleanly; Linear/Log scale toggle verified; `Switching History` table pagination (`Page 1 / 10` -> `Page 2 / 10`) verified.
+- **Markets (`/markets`)**:
+  - Navigating between `Markets` and `Dashboard` triggered `0` duplicate `/api/health` requests (`[health #4]` / `[health #5]` fired only on full `page.goto` reload for mobile check).
+  - Latest close cards reconciled: Bitcoin `$74,496.47`, Ethereum `$2,119.10`, Solana `$86.88` (`2026-11-09`); Common-Start Date `2020-04-10`.
+  - Data quality audit reconciled: `3,653` valid BTC/ETH observations, `2,405` valid / `1,248` missing pre-launch SOL observations (`0` duplicates, `0` non-positive, `0` moves > 50%); Ethereum pre-`2017-11-09` caveat displayed.
+  - All 3 Recharts charts rendered curves cleanly with `connectNulls={false}`.
+  - Date-range filtering verified: `Test Window (2025-2026)` updated range to `2025-01-01 to 2026-11-09 (678 days)`; invalid range (`2025-06-01` > `2025-01-01`) displayed `"Start date must be on or before end date."`; `Reset` restored `2016-11-09 to 2026-11-09 (3,653 days)`.
+- **Responsive Mobile (`390x844`) & Errors**: Zero horizontal overflow on desktop (`1280x800`) and mobile (`390x844`) for both `/dashboard` and `/markets`; **`0` uncaught page errors and `0` console errors**.
 
 ### 4. Backend API & Parity Suite Re-run (`backend/tests`)
 Command:
 ```powershell
 .\venv\Scripts\python.exe -m unittest discover -s backend/tests -v
 ```
-Result: **PASS (`21 / 21` tests in `175.591s`, `OK`)**
+Result: **PASS (`21 / 21` tests in `143.648s`, `OK`)**
 
 ### 5. Existing v1.0 Unit Suite Re-run (`tests`)
 Command:
 ```powershell
 .\venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
-Result: **PASS (`26 / 26` tests in `123.222s`, `OK`)**
+Result: **PASS (`26 / 26` tests in `114.434s`, `OK`)**
 
 ---
 
-## Phase 1 & Phase 0 Historical Summaries
-- Phase 1 (`2026-11-11`): `backend/tests` `21/21` (`81.071s`), `tests` `26/26` (`53.418s`), live Uvicorn 10-endpoint cold/warm benchmark `200/200`.
-- Phase 0 (`2026-11-11`): `tests` `26/26` (`71.734s`), `validate_data.py` exit 0 (`3,653` rows), `validate_optimizer.py` exit 0 (`0..10` caps `PASS`).
+## Historical Summaries (Phases 0–2)
+- Phase 2 (`2026-11-12`): `npm test` `3/3`, `tsc`/`eslint`/`next build` pass, Playwright Strict Mode + mobile navigation pass, `backend/tests` `21/21`, `tests` `26/26`.
+- Phase 1 (`2026-11-11`): `backend/tests` `21/21` (`81.071s`), `tests` `26/26` (`53.418s`), live Uvicorn 10-endpoint benchmark `200/200`.
+- Phase 0 (`2026-11-11`): `tests` `26/26` (`71.734s`), `validate_data.py` exit 0, `validate_optimizer.py` exit 0.
