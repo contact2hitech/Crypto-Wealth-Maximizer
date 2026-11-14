@@ -16,11 +16,11 @@ Result: **PASS (`11 / 11` tests in `532.67ms`)**:
 - `phase3Helpers.test.mts` (`8 / 8`):
   - `REFERENCE_BACKTEST_CONFIG matches v1.0 FINAL_RESEARCH_REPORT reference settings`
   - `downsampleByExtrema preserves endpoints, series onset, and peak/trough extrema`
-  - `downsampleByExtrema preserves independent multi-series multi-scale extrema without occlusion` (Series A $50k-$120k, Series B 2-250, Series C -99.5% to +5% onset at 350; all individual extrema preserved without cross-series scale occlusion; maxPoints budget enforced under normal conditions)
+  - `downsampleByExtrema preserves independent multi-series multi-scale extrema without occlusion` (Series A $50k-$120k, Series B 2-250, Series C -99.5% to +5% onset at 350; all individual extrema preserved without cross-series scale occlusion; requested maxPoints budget enforced during normal operation)
   - `downsampleByExtrema throws RangeError for zero, negative, or non-integer maxPoints` (throws explicit RangeError rather than silently returning full dataset)
   - `downsampleByExtrema handles maxPoints = 1 by preserving mandatory boundaries without returning complete dataset` (mandatory-boundary overflow exception)
-  - `downsampleByExtrema preserves all mandatory boundaries when mandatory point count overflows requested budget` (6 mandatory points returned when maxPoints = 3 under intentional mandatory-boundary overflow exception)
-  - `downsampleByExtrema handles mandatory points exceeding requested maxPoints gracefully` (mandatory-boundary overflow exception)
+  - `downsampleByExtrema preserves all mandatory boundaries when mandatory point count overflows requested budget` (6 mandatory points retained when maxPoints = 3 under intentional mandatory-boundary overflow exception, not an algorithm failure)
+  - `downsampleByExtrema handles mandatory points exceeding requested maxPoints gracefully` (intentional mandatory-boundary overflow exception)
   - `financial formatters return em-dash for null/non-finite values and format numbers cleanly`
 
 ### 2. Frontend TypeScript, ESLint, and Production Build (`frontend/`)

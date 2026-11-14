@@ -3,17 +3,13 @@
  * Never alters backend KPIs or summary tables.
  *
  * Guarantees:
- * 1. Preserves first and last input observations.
- * 2. Preserves the first valid observation of each series.
- * 3. Preserves the immediately preceding null observation at series onset (e.g., SOL on 2020-04-10).
- * 4. Preserves independent minimum and maximum extrema for EVERY series within each bucket
+ * 1. The requested maxPoints budget is enforced during normal operation.
+ * 2. The first and last observations are preserved.
+ * 3. The first valid observation of each series and its preceding null boundary are preserved.
+ * 4. Independent minimum and maximum extrema are preserved for every series within each bucket
  *    (preventing cross-series scale occlusion where a high-scale series masks a lower-scale asset).
- * 5. Enforces the maxPoints budget (default 450) under normal conditions.
- *
- * Mandatory-Boundary Overflow Exception:
- * Mandatory endpoint and series-onset boundaries are preserved even when their
- * count exceeds the requested budget. This is an intentional mandatory-boundary
- * overflow exception to ensure required data boundaries are never dropped or distorted.
+ * 5. If mandatory boundary points alone exceed the requested budget, all mandatory points are retained.
+ * 6. This mandatory-boundary overflow is an intentional exception, not an algorithm failure.
  *
  * Validation:
  * @throws {RangeError} If maxPoints is not a positive integer (<= 0, non-integer, or non-finite).
@@ -54,8 +50,9 @@ export function downsampleByExtrema<T>(
     }
   }
 
-  // If mandatory boundary points alone meet or exceed the maxPoints budget,
-  // preserve all mandatory points and document that the budget is saturated.
+  // Mandatory-boundary overflow exception:
+  // If mandatory boundary points alone exceed or meet the requested budget, retain all mandatory points.
+  // This is an intentional exception, not an algorithm failure.
   if (mandatoryIndices.size >= maxPoints) {
     return Array.from(mandatoryIndices)
       .sort((a, b) => a - b)
