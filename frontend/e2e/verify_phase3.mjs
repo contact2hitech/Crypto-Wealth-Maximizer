@@ -122,7 +122,7 @@ try {
   frontendProc.stdout?.on("data", (d) => console.log("[frontend stdout]", d.toString().trim()));
   frontendProc.stderr?.on("data", (d) => console.error("[frontend stderr]", d.toString().trim()));
 
-  await waitForHttp("http://127.0.0.1:8000/api/health", 45000);
+  await waitForHttp("http://127.0.0.1:8000/api/health", 30000);
   await waitForHttp("http://localhost:3000/dashboard", 60000);
   console.log("Servers ready for Phase 3 integration test.");
 
@@ -273,4 +273,3 @@ try {
   await stopProc(backendProc);
   await stopProc(frontendProc);
 }
-

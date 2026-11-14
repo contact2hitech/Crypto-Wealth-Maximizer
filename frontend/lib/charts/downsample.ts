@@ -9,15 +9,28 @@
  * 4. Preserves independent minimum and maximum extrema for EVERY series within each bucket
  *    (preventing cross-series scale occlusion where a high-scale series masks a lower-scale asset).
  * 5. Strictly enforces the maxPoints limit (default 450).
- *    If mandatory boundary points alone meet or exceed maxPoints, all mandatory points
- *    are returned to avoid dropping required data boundaries.
+ *
+ * Mandatory-Point Overflow Exception:
+ * If the number of mandatory boundary points (first/last points plus series onsets)
+ * meets or exceeds the requested maxPoints budget, all mandatory boundary points
+ * are preserved and returned. Under no circumstances are required data boundaries
+ * dropped or distorted to satisfy an unrealistically small budget.
+ *
+ * Validation:
+ * @throws {RangeError} If maxPoints is not a positive integer (<= 0, non-integer, or non-finite).
  */
 export function downsampleByExtrema<T>(
   items: readonly T[],
   maxPoints: number,
   getSeriesValues: (item: T) => Array<number | null | undefined>
 ): T[] {
-  if (items.length <= maxPoints || maxPoints <= 1) {
+  if (!Number.isInteger(maxPoints) || maxPoints <= 0) {
+    throw new RangeError(
+      `maxPoints must be a positive integer, received: ${maxPoints}`
+    );
+  }
+
+  if (items.length <= maxPoints) {
     return [...items];
   }
 

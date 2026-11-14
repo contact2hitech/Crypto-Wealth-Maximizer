@@ -11,12 +11,15 @@ Command (inside `frontend/`):
 ```powershell
 npm test   # runs: node --test tests/*.test.mts
 ```
-Result: **PASS (`8 / 8` tests in `429.51ms`)**:
+Result: **PASS (`11 / 11` tests in `532.67ms`)**:
 - `healthLifecycle.test.mts` (`3 / 3`): Strict Mode lifecycle, stale request protection, deduplication & offline/retry recovery.
-- `phase3Helpers.test.mts` (`5 / 5`):
+- `phase3Helpers.test.mts` (`8 / 8`):
   - `REFERENCE_BACKTEST_CONFIG matches v1.0 FINAL_RESEARCH_REPORT reference settings`
   - `downsampleByExtrema preserves endpoints, series onset, and peak/trough extrema`
   - `downsampleByExtrema preserves independent multi-series multi-scale extrema without occlusion` (Series A $50k-$120k, Series B 2-250, Series C -99.5% to +5% onset at 350; all individual extrema preserved without cross-series scale occlusion; length strictly respects limit)
+  - `downsampleByExtrema throws RangeError for zero, negative, or non-integer maxPoints` (throws explicit RangeError rather than silently returning full dataset)
+  - `downsampleByExtrema handles maxPoints = 1 by preserving mandatory boundaries without returning complete dataset`
+  - `downsampleByExtrema preserves all mandatory boundaries when mandatory point count overflows requested budget` (6 mandatory points returned when maxPoints = 3)
   - `downsampleByExtrema handles mandatory points exceeding requested maxPoints gracefully`
   - `financial formatters return em-dash for null/non-finite values and format numbers cleanly`
 

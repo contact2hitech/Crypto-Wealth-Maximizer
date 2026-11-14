@@ -145,6 +145,94 @@ test("downsampleByExtrema preserves independent multi-series multi-scale extrema
   }
 });
 
+test("downsampleByExtrema throws RangeError for zero, negative, or non-integer maxPoints", () => {
+  const rows = [{ idx: 0, v: 10 }, { idx: 1, v: 20 }, { idx: 2, v: 30 }];
+
+  // 1. maxPoints = 0
+  assert.throws(
+    () => downsampleByExtrema(rows, 0, (r) => [r.v]),
+    {
+      name: "RangeError",
+      message: /maxPoints must be a positive integer, received: 0/,
+    }
+  );
+
+  // 2. Negative maxPoints
+  assert.throws(
+    () => downsampleByExtrema(rows, -1, (r) => [r.v]),
+    {
+      name: "RangeError",
+      message: /maxPoints must be a positive integer, received: -1/,
+    }
+  );
+  assert.throws(
+    () => downsampleByExtrema(rows, -100, (r) => [r.v]),
+    {
+      name: "RangeError",
+      message: /maxPoints must be a positive integer, received: -100/,
+    }
+  );
+
+  // 3. Non-integer maxPoints
+  assert.throws(
+    () => downsampleByExtrema(rows, 1.5, (r) => [r.v]),
+    {
+      name: "RangeError",
+      message: /maxPoints must be a positive integer, received: 1.5/,
+    }
+  );
+  assert.throws(
+    () => downsampleByExtrema(rows, Number.NaN, (r) => [r.v]),
+    {
+      name: "RangeError",
+      message: /maxPoints must be a positive integer, received: NaN/,
+    }
+  );
+  assert.throws(
+    () => downsampleByExtrema(rows, Number.POSITIVE_INFINITY, (r) => [r.v]),
+    {
+      name: "RangeError",
+    }
+  );
+});
+
+test("downsampleByExtrema handles maxPoints = 1 by preserving mandatory boundaries without returning complete dataset", () => {
+  const rows = Array.from({ length: 50 }, (_, i) => ({
+    idx: i,
+    v: i * 2,
+  }));
+
+  // For a 50-item dataset with maxPoints = 1, mandatory endpoints (idx 0 and 49) must be preserved.
+  // It must NOT silently return all 50 items.
+  const sampled = downsampleByExtrema(rows, 1, (r) => [r.v]);
+  assert.equal(sampled.length, 2);
+  assert.equal(sampled[0].idx, 0);
+  assert.equal(sampled[1].idx, 49);
+});
+
+test("downsampleByExtrema preserves all mandatory boundaries when mandatory point count overflows requested budget", () => {
+  const rows = Array.from({ length: 100 }, (_, i) => ({
+    idx: i,
+    s1: i,
+    s2: i < 25 ? null : i,
+    s3: i < 60 ? null : 100 - i,
+  }));
+  // Mandatory points:
+  // - idx 0, 99 (endpoints)
+  // - idx 25 (first s2), 24 (preceding null for s2)
+  // - idx 60 (first s3), 59 (preceding null for s3)
+  // Total = 6 mandatory boundary points.
+  // Request maxPoints = 3 (smaller than the 6 mandatory points).
+  const sampled = downsampleByExtrema(rows, 3, (r) => [r.s1, r.s2, r.s3]);
+
+  // Mandatory boundary overflow exception: all 6 boundaries must be preserved rather than dropped.
+  assert.equal(sampled.length, 6);
+  assert.deepEqual(
+    sampled.map((r) => r.idx),
+    [0, 24, 25, 59, 60, 99]
+  );
+});
+
 test("downsampleByExtrema handles mandatory points exceeding requested maxPoints gracefully", () => {
   const rows = Array.from({ length: 50 }, (_, i) => ({
     idx: i,

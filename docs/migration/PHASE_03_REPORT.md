@@ -13,8 +13,10 @@ Integrate the `/dashboard` and `/markets` Next.js App Router pages exclusively w
 1. **Shared Visualization & Reference Utilities**:
    - Created `frontend/lib/constants/referenceConfig.ts` defining the exact v1.0 reference configuration (`A: 90-day momentum`, `$1,480`, `Monthly`, `30d` hold, `10%` threshold, `10 bps` fee, `20%` drawdown protection, `0%` recovery, `Invest immediately in Bitcoin`, `include_benchmarks: true`, `include_daily_trace: false`).
    - Created `frontend/lib/charts/downsample.ts` (`downsampleByExtrema`) preserving first/last dates, asset-onset boundaries (e.g., Solana `2020-04-10`), and independent per-series bucket min/max extrema strictly for SVG responsiveness (`<= 450` chart points) while leaving KPIs and tables untouched.
-     - *Phase 3 Review Correction*: Updated algorithm to evaluate minimum and maximum indices independently for every series in every bucket. This eliminates cross-series scale occlusion (where high-scale series like Bitcoin or Portfolio wealth mask lower-scale asset peaks and troughs like Solana or drawdown percentages).
-     - Strictly enforces the `maxPoints` limit (default 450), and handles budget saturation gracefully if mandatory boundary points alone meet or exceed the budget.
+     - *Phase 3 Review Corrections*:
+       - Evaluates minimum and maximum indices independently for every series in every bucket, eliminating cross-series scale occlusion.
+       - Validates `maxPoints` strictly: requires a positive integer and throws an explicit `RangeError` for zero, negative, or non-integer budgets (preventing silent fallbacks).
+       - *Normal behaviour vs Mandatory-boundary overflow*: Under normal budgets (`maxPoints > mandatoryCount`), the algorithm strictly enforces `output.length <= maxPoints`. If an unrealistically small budget is requested where mandatory boundaries alone (endpoints and series onsets) meet or exceed the budget, all mandatory boundary points are preserved as an explicit documented exception to prevent dropping required data transitions.
    - Created `frontend/components/charts/ClientChartFrame.tsx` and `frontend/components/charts/chartFormatters.ts` to hydrate Recharts `ResponsiveContainer` cleanly with zero SSR sizing warnings.
    - Enhanced `frontend/components/common/DataTable.tsx` with optional `pageSize` pagination (`Previous`/`Next` + row counts).
 2. **Dashboard Integration (`/dashboard`, `frontend/components/dashboard/DashboardClient.tsx`)**:
@@ -30,7 +32,7 @@ Integrate the `/dashboard` and `/markets` Next.js App Router pages exclusively w
    - Rendered three Recharts charts with `connectNulls={false}`: **Historical Closing Prices (USD)** (Linear/Log toggle), **Normalized Performance (100 = First Observation)** (Linear/Log toggle), and **Fair Three-Way Common-Start Comparison (`2020-04-10 = 100`)** with empty-state fallback when a pre-overlap window is selected.
    - Rendered **Buy-and-Hold Summary Table**, **Paginated Relative-Performance Crossovers Table** (`pageSize={12}`), **Per-Asset Data Quality Audit Table** (`valid_observations`, `missing_observations`, `non_positive_prices`, `outliers_over_50pct`, `duplicate_dates`), and explicit **Dataset Provenance & Missing-Data Caveats** (Solana pre-`2020-04-10` null preservation and Ethereum pre-`2017-11-09` provisional history disclosure).
 4. **Tests & Reproducible E2E Harness**:
-   - Added `frontend/tests/phase3Helpers.test.mts` (`5` helper tests; `8 / 8` total frontend unit tests passing), including multi-series multi-scale extrema preservation tests and budget saturation handling.
+   - Added `frontend/tests/phase3Helpers.test.mts` (`8` helper tests; `11 / 11` total frontend unit tests passing), including multi-series multi-scale extrema preservation, strict positive-integer budget validation (`RangeError`), `maxPoints = 1`, and mandatory boundary overflow handling.
    - Committed reproducible Playwright E2E test script to `frontend/e2e/verify_phase3.mjs` executable via `npm run test:e2e` (`playwright-core` added as devDependency). Verifies live Dashboard & Markets KPIs, Recharts curves, Linear/Log toggle, pagination, date filtering, client validation, mobile layout (390x844), and zero console/page errors.
 
 ## 4. Files Created
@@ -63,7 +65,10 @@ Verified via `git diff 49eeb2e -- backend app.py crypto_engine.py strategy_engin
 - Untouched Phase 2 placeholder routes: `/strategy-lab`, `/risk-lab`, `/robustness`, `/reports`
 
 ## 7. Architecture Decisions
-1. **Extrema-Preserving SVG Decimation (`downsampleByExtrema`)**: Decimates 3,653-point daily arrays to `<= 450` points strictly for Recharts SVG performance while mathematically preserving endpoints, Solana's `2020-04-10` launch boundary, and peak/trough extrema (`-69.94%`). All KPIs and summary tables render un-sampled backend figures.
+1. **Extrema-Preserving SVG Decimation (`downsampleByExtrema`)**: Decimates 3,653-point daily arrays strictly for Recharts SVG performance while mathematically preserving endpoints, Solana's `2020-04-10` launch boundary, and peak/trough extrema (`-69.94%`). All KPIs and summary tables render un-sampled backend figures.
+   - **Budget Validation**: Requires `maxPoints` to be a positive integer, throwing a clear `RangeError` for `<= 0`, negative, or non-integer budgets.
+   - **Normal Operation**: When `maxPoints > mandatoryCount`, points are strictly capped at `<= maxPoints` (default 450) with independent bucket extrema per series to prevent multi-scale occlusion.
+   - **Mandatory-Boundary Overflow Exception**: When mandatory boundary points (endpoints and series onsets) meet or exceed the requested budget (e.g. `maxPoints = 1` or `2`), all mandatory boundaries are preserved and returned to prevent dropping critical financial transitions.
 2. **Selective Payload Control (`include_daily_trace: false`)**: Dashboard omits the 17-column daily drawdown execution trace (~1.3 MB) since Risk Lab owns trace inspection in Phase 4.
 3. **`connectNulls={false}` & Overlap Windowing**: Markets preserves `null` pre-`2020-04-10` Solana prices across charts and slices Chart 3 (`Common-Start Comparison`) to `date >= common_start_date` (`2020-04-10 = 100`), matching `app.py` Section 3 behavior.
 4. **Client-Side Pagination in `DataTable`**: Large tables (`95` switching rows, crossovers) paginate cleanly (`10` / `12` rows per page) without bloated DOM tables.
@@ -77,23 +82,19 @@ Verified via `git diff 49eeb2e -- backend app.py crypto_engine.py strategy_engin
 ## 9. Tests Executed & Actual Test Results
 | Suite / Check | Command | Result |
 |---|---|---|
-| Frontend Unit Tests | `npm test` (`node --test tests/*.test.mts`) | **PASS (`8 / 8` in `429.51ms`)** |
-| TypeScript Check | `npx tsc --noEmit` (in `frontend/`) | **PASS (exit 0)** |
+| Frontend Unit Tests | `npm test` (`node --test tests/*.test.mts`) | **PASS (`11 / 11` in `532.67ms`)** |
+| TypeScript Check | `Push-Location frontend; npx tsc --noEmit; Pop-Location` | **PASS (exit 0)** |
 | ESLint Check | `npm run lint` (in `frontend/`) | **PASS (exit 0)** |
 | Next.js Production Build | `npm run build` (in `frontend/`) | **PASS (exit 0; `10/10` static pages in `1311ms`)** |
 | Playwright E2E Integration (Headless Microsoft Edge, `reactStrictMode: true`) | `npm run test:e2e --prefix frontend` (runs `node e2e/verify_phase3.mjs`) | **PASS (`0` console/page errors; Dashboard & Markets KPIs reconciled; Recharts curves, Linear/Log toggle, date-range filtering, pagination, and `390x844` mobile layout verified)** |
-| Backend API & Parity Suite | `.\venv\Scripts\python.exe -m unittest discover -s backend/tests -v` | **PASS (`21 / 21`, `OK`)** |
-| Original v1.0 Unit Suite | `.\venv\Scripts\python.exe -m unittest discover -s tests -v` | **PASS (`26 / 26`, `OK`)** |
+| Backend API & Parity Suite | `.\venv\Scripts\python.exe -m unittest discover -s backend/tests -v` | **PASS (`21 / 21` in `68.003s`, `OK`)** |
+| Original v1.0 Unit Suite | `.\venv\Scripts\python.exe -m unittest discover -s tests -v` | **PASS (`26 / 26` in `50.605s`, `OK`)** |
 
 ## 10. Commands Executed
 ```powershell
 Push-Location frontend; npm test; npx tsc --noEmit; npm run lint; npm run build; npm run test:e2e; Pop-Location
 .\venv\Scripts\python.exe -m unittest discover -s backend/tests -v
 .\venv\Scripts\python.exe -m unittest discover -s tests -v
-```
-.\venv\Scripts\python.exe -m unittest discover -s backend/tests -v
-.\venv\Scripts\python.exe -m unittest discover -s tests -v
-node C:\Users\Hitesh\.gemini\antigravity\brain\2ff53d6f-97c7-4886-ab62-f8c3e7b21c0c\scratch\pw\verify_phase3.mjs
 ```
 
 ## 11. Known Issues & Limitations
@@ -128,7 +129,7 @@ Visually inspected screenshots in scratch folder: `phase3_dashboard_desktop.png`
 - [x] Markets displays latest close cards, date-range filtering, USD prices, normalized performance, common-start (`2020-04-10 = 100`) comparison, paginated crossovers, buy-and-hold summary, and per-asset data quality audit.
 - [x] Pre-launch `null` Solana observations preserved (`connectNulls={false}`) and Ethereum historical provenance caveat clearly disclosed.
 - [x] Zero financial metric calculations performed in TypeScript; zero fabricated data.
-- [x] `npm test` (`6/6`), `npx tsc --noEmit`, `npm run lint`, `npm run build`, Playwright live integration, `backend/tests` (`21/21`), and `tests` (`26/26`) all pass.
+- [x] `npm test` (`11/11`), `npx tsc --noEmit`, `npm run lint`, `npm run build`, Playwright live integration, `backend/tests` (`21/21`), and `tests` (`26/26`) all pass.
 - [x] Phase 3 set to `COMPLETED — AWAITING EXTERNAL REVIEW`; Phase 4 not started.
 
 ## 15. Recommended Next Steps
