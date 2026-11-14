@@ -9,11 +9,11 @@
 Integrate `/dashboard` and `/markets` with the existing FastAPI backend endpoints (`POST /api/backtest/run`, `GET /api/markets/prices`, `GET /api/markets/summary`) using Recharts visualizations, backend-computed KPIs and tables, date-range query filtering, pagination for large tables, extrema-preserving chart decimation for responsive rendering, and full research/provenance disclosures without duplicating financial logic in TypeScript.
 
 ## Task Checklist
-- [x] Add canonical v1.0 reference configuration (`frontend/lib/constants/referenceConfig.ts`) and extrema-preserving chart sampling helper (`frontend/lib/charts/downsample.ts`).
+- [x] Add canonical v1.0 reference configuration (`frontend/lib/constants/referenceConfig.ts`) and extrema-preserving chart sampling helper (`frontend/lib/charts/downsample.ts`, normal `maxPoints` budget enforcement with intentional mandatory-boundary overflow exception).
 - [x] Enhance `DataTable` (`frontend/components/common/DataTable.tsx`) with optional `pageSize` pagination for large tables (switching history & crossovers).
 - [x] Integrate `/dashboard` (`DashboardClient.tsx`) with `POST /api/backtest/run` (`include_daily_trace: false`) and `GET /api/markets/summary`: all 9 KPIs, Recharts Equity Curve vs BTC/ETH/SOL benchmarks (Linear/Log toggle), Daily Underwater Drawdown chart, Ending Allocation, Configuration Summary, Market Overview, Benchmark Table, Paginated Switch History, and Research Warnings.
 - [x] Integrate `/markets` (`MarketsClient.tsx`) with `GET /api/markets/prices` and `GET /api/markets/summary`: Latest Close Cards, Date-Range Controls + Presets + Validation, Historical USD Prices, Normalized Performance (`100 = first obs`), Common-Start Comparison (`2020-04-10 = 100`, `connectNulls={false}`), Buy-and-Hold Table, Paginated Crossovers Table, Per-Asset Data Quality Audit Table, and Ethereum/Solana Provenance Disclosures.
-- [x] Add Phase 3 unit tests (`frontend/tests/phase3Helpers.test.mts`, `8` tests) including multi-series multi-scale extrema preservation, RangeError budget validation, and budget overflow tests; commit reproducible Playwright E2E harness (`frontend/e2e/verify_phase3.mjs`, `npm run test:e2e`).
+- [x] Add Phase 3 unit tests (`frontend/tests/phase3Helpers.test.mts`, `8` tests) including multi-series multi-scale extrema preservation, RangeError budget validation, normal budget enforcement, and mandatory-boundary overflow tests; commit reproducible Playwright E2E harness (`frontend/e2e/verify_phase3.mjs`, `npm run test:e2e`).
 - [x] Verify `npm test` (`11/11`), `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test:e2e`, `backend/tests` (`21/21`), and `tests` (`26/26`).
 
 ## Exit Gate Status

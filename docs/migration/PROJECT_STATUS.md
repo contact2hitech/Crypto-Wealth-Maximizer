@@ -20,7 +20,7 @@
 
 ## Latest Verification Summary (Observed `2026-11-14`)
 
-- **Frontend Unit Tests (`npm test`)**: `11 / 11` passed (`3` Strict Mode lifecycle + `8` Phase 3 helpers/formatters/downsample, including multi-series multi-scale extrema preservation, RangeError budget validation, and budget overflow handling).
+- **Frontend Unit Tests (`npm test`)**: `11 / 11` passed (`3` Strict Mode lifecycle + `8` Phase 3 helpers/formatters/downsample, including multi-series multi-scale extrema preservation, RangeError budget validation, normal maxPoints budget enforcement, and intentional mandatory-boundary overflow exception).
 - **Frontend Static & Production Build**: `Push-Location frontend; npx tsc --noEmit; Pop-Location` (exit `0`), `npm run lint` (exit `0`), `npm run build` (Next.js `16.4.6` Turbopack, `10/10` static pages).
 - **Playwright Reproducible E2E Integration (`npm run test:e2e --prefix frontend`)**: Passed (`0` console/page errors; Dashboard KPIs `$585,970.46` / `39,492.60%` / `81.89%` / `-69.94%` / `68.43%` / `1.21` / `95 / 1,830` and Markets `$74,496.47` / `$2,119.10` / `$86.88` / `2020-04-10` / `1,248` pre-launch SOL nulls reconciled with FastAPI; Recharts curves, Linear/Log toggles, date-range filtering, pagination, and mobile layouts verified).
 - **Backend API & Parity `unittest` suite (`backend/tests`)**: `21 / 21` passed (`68.003s`, `OK`).

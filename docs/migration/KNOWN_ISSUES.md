@@ -20,7 +20,7 @@ This file tracks technical issues, architectural constraints, dataset caveats, a
 - **Planned Optimization Review**: Measure memory footprint under multi-parameter workloads in Phase 5/6 and consider lowering default `BACKEND_CACHE_SIZE` or adding byte-weight estimation without introducing Redis.
 
 ### `KI-015` — Chart Downsampling Multi-Series Extrema Resolution & `allowImportingTsExtensions`
-- **Phase 3 Resolution**: `downsampleByExtrema` in `frontend/lib/charts/downsample.ts` was corrected to track minimum and maximum indices independently for every series in every bucket. This prevents cross-series scale occlusion (e.g., Bitcoin price ~$70k or strategy wealth ~$500k occluding Solana price ~$20 or drawdown percentages -69%), while strictly enforcing the `<= 450` maxPoints budget and gracefully preserving mandatory points.
+- **Phase 3 Resolution**: `downsampleByExtrema` in `frontend/lib/charts/downsample.ts` was corrected to track minimum and maximum indices independently for every series in every bucket. This prevents cross-series scale occlusion (e.g., Bitcoin price ~$70k or strategy wealth ~$500k occluding Solana price ~$20 or drawdown percentages -69%). The `maxPoints` budget (default 450) is enforced under normal conditions, while mandatory endpoint and series-onset boundaries are preserved even when their count exceeds the requested budget as an intentional mandatory-boundary overflow exception.
 - **Node Test Note**: `frontend/tsconfig.json` enables `"allowImportingTsExtensions": true` with `"noEmit": true` so Node 24 native `node --test` can import `.ts` modules with full type checking.
 
 ### `KI-016` — Dashboard / Markets `useEffect` Strict Mode Fetch Behavior
