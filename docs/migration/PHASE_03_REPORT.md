@@ -12,7 +12,9 @@ Integrate the `/dashboard` and `/markets` Next.js App Router pages exclusively w
 ## 3. Work Completed
 1. **Shared Visualization & Reference Utilities**:
    - Created `frontend/lib/constants/referenceConfig.ts` defining the exact v1.0 reference configuration (`A: 90-day momentum`, `$1,480`, `Monthly`, `30d` hold, `10%` threshold, `10 bps` fee, `20%` drawdown protection, `0%` recovery, `Invest immediately in Bitcoin`, `include_benchmarks: true`, `include_daily_trace: false`).
-   - Created `frontend/lib/charts/downsample.ts` (`downsampleByExtrema`) preserving first/last dates, asset-onset boundaries (e.g., Solana `2020-04-10`), and per-bucket min/max extrema strictly for SVG responsiveness (`<= 450` chart points) while leaving KPIs and tables untouched.
+   - Created `frontend/lib/charts/downsample.ts` (`downsampleByExtrema`) preserving first/last dates, asset-onset boundaries (e.g., Solana `2020-04-10`), and independent per-series bucket min/max extrema strictly for SVG responsiveness (`<= 450` chart points) while leaving KPIs and tables untouched.
+     - *Phase 3 Review Correction*: Updated algorithm to evaluate minimum and maximum indices independently for every series in every bucket. This eliminates cross-series scale occlusion (where high-scale series like Bitcoin or Portfolio wealth mask lower-scale asset peaks and troughs like Solana or drawdown percentages).
+     - Strictly enforces the `maxPoints` limit (default 450), and handles budget saturation gracefully if mandatory boundary points alone meet or exceed the budget.
    - Created `frontend/components/charts/ClientChartFrame.tsx` and `frontend/components/charts/chartFormatters.ts` to hydrate Recharts `ResponsiveContainer` cleanly with zero SSR sizing warnings.
    - Enhanced `frontend/components/common/DataTable.tsx` with optional `pageSize` pagination (`Previous`/`Next` + row counts).
 2. **Dashboard Integration (`/dashboard`, `frontend/components/dashboard/DashboardClient.tsx`)**:
@@ -27,9 +29,9 @@ Integrate the `/dashboard` and `/markets` Next.js App Router pages exclusively w
    - Rendered **Latest Closing Price Cards** (`Bitcoin`, `Ethereum`, `Solana`) and **Common-Start Date** card.
    - Rendered three Recharts charts with `connectNulls={false}`: **Historical Closing Prices (USD)** (Linear/Log toggle), **Normalized Performance (100 = First Observation)** (Linear/Log toggle), and **Fair Three-Way Common-Start Comparison (`2020-04-10 = 100`)** with empty-state fallback when a pre-overlap window is selected.
    - Rendered **Buy-and-Hold Summary Table**, **Paginated Relative-Performance Crossovers Table** (`pageSize={12}`), **Per-Asset Data Quality Audit Table** (`valid_observations`, `missing_observations`, `non_positive_prices`, `outliers_over_50pct`, `duplicate_dates`), and explicit **Dataset Provenance & Missing-Data Caveats** (Solana pre-`2020-04-10` null preservation and Ethereum pre-`2017-11-09` provisional history disclosure).
-4. **Tests & Verification**:
-   - Added `frontend/tests/phase3Helpers.test.mts` (`3` new unit tests; `6 / 6` total frontend unit tests passing).
-   - Ran live Playwright headless Edge integration test (`verify_phase3.mjs`) against `uvicorn :8000` and `next dev :3000`.
+4. **Tests & Reproducible E2E Harness**:
+   - Added `frontend/tests/phase3Helpers.test.mts` (`5` helper tests; `8 / 8` total frontend unit tests passing), including multi-series multi-scale extrema preservation tests and budget saturation handling.
+   - Committed reproducible Playwright E2E test script to `frontend/e2e/verify_phase3.mjs` executable via `npm run test:e2e` (`playwright-core` added as devDependency). Verifies live Dashboard & Markets KPIs, Recharts curves, Linear/Log toggle, pagination, date filtering, client validation, mobile layout (390x844), and zero console/page errors.
 
 ## 4. Files Created
 - `frontend/components/charts/ClientChartFrame.tsx`
@@ -39,12 +41,15 @@ Integrate the `/dashboard` and `/markets` Next.js App Router pages exclusively w
 - `frontend/lib/charts/downsample.ts`
 - `frontend/lib/constants/referenceConfig.ts`
 - `frontend/tests/phase3Helpers.test.mts`
+- `frontend/e2e/verify_phase3.mjs`
 - `docs/migration/PHASE_03_REPORT.md` (this file)
 
 ## 5. Files Modified
 - `frontend/app/dashboard/page.tsx`
 - `frontend/app/markets/page.tsx`
 - `frontend/components/common/DataTable.tsx`
+- `frontend/package.json` (added `playwright-core` devDependency and `test:e2e` script)
+- `frontend/.gitignore` (added `/e2e/screenshots`)
 - `docs/migration/PROJECT_STATUS.md`
 - `docs/migration/CURRENT_PHASE.md`
 - `docs/migration/NEXT_ACTIONS.md`
@@ -72,17 +77,20 @@ Verified via `git diff 49eeb2e -- backend app.py crypto_engine.py strategy_engin
 ## 9. Tests Executed & Actual Test Results
 | Suite / Check | Command | Result |
 |---|---|---|
-| Frontend Unit Tests | `npm test` (`node --test tests/*.test.mts`) | **PASS (`6 / 6` in `424.78ms`)** |
+| Frontend Unit Tests | `npm test` (`node --test tests/*.test.mts`) | **PASS (`8 / 8` in `429.51ms`)** |
 | TypeScript Check | `npx tsc --noEmit` (in `frontend/`) | **PASS (exit 0)** |
 | ESLint Check | `npm run lint` (in `frontend/`) | **PASS (exit 0)** |
-| Next.js Production Build | `npm run build` (in `frontend/`) | **PASS (exit 0; `10/10` static pages)** |
-| Playwright Live Integration (Headless Edge, `reactStrictMode: true`) | `node ...\verify_phase3.mjs` against `uvicorn :8000` + `next dev :3000` | **PASS (`0` console/page errors; Dashboard & Markets KPIs reconciled; Recharts curves, Linear/Log toggle, date-range filtering, pagination, and `390x844` mobile layout verified)** |
-| Backend API & Parity Suite | `.\venv\Scripts\python.exe -m unittest discover -s backend/tests -v` | **PASS (`21 / 21` in `143.648s`, `OK`)** |
-| Original v1.0 Unit Suite | `.\venv\Scripts\python.exe -m unittest discover -s tests -v` | **PASS (`26 / 26` in `114.434s`, `OK`)** |
+| Next.js Production Build | `npm run build` (in `frontend/`) | **PASS (exit 0; `10/10` static pages in `1311ms`)** |
+| Playwright E2E Integration (Headless Microsoft Edge, `reactStrictMode: true`) | `npm run test:e2e --prefix frontend` (runs `node e2e/verify_phase3.mjs`) | **PASS (`0` console/page errors; Dashboard & Markets KPIs reconciled; Recharts curves, Linear/Log toggle, date-range filtering, pagination, and `390x844` mobile layout verified)** |
+| Backend API & Parity Suite | `.\venv\Scripts\python.exe -m unittest discover -s backend/tests -v` | **PASS (`21 / 21`, `OK`)** |
+| Original v1.0 Unit Suite | `.\venv\Scripts\python.exe -m unittest discover -s tests -v` | **PASS (`26 / 26`, `OK`)** |
 
 ## 10. Commands Executed
 ```powershell
-Push-Location frontend; npm test; npx tsc --noEmit; npm run lint; npm run build; Pop-Location
+Push-Location frontend; npm test; npx tsc --noEmit; npm run lint; npm run build; npm run test:e2e; Pop-Location
+.\venv\Scripts\python.exe -m unittest discover -s backend/tests -v
+.\venv\Scripts\python.exe -m unittest discover -s tests -v
+```
 .\venv\Scripts\python.exe -m unittest discover -s backend/tests -v
 .\venv\Scripts\python.exe -m unittest discover -s tests -v
 node C:\Users\Hitesh\.gemini\antigravity\brain\2ff53d6f-97c7-4886-ab62-f8c3e7b21c0c\scratch\pw\verify_phase3.mjs

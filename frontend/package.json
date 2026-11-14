@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test tests/*.test.mts"
+    "test": "node --test tests/*.test.mts",
+    "test:e2e": "node e2e/verify_phase3.mjs"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
@@ -30,6 +31,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
+    "playwright-core": "^1.65.1",
     "tailwindcss": "4.3.3",
     "typescript": "^5"
   }

@@ -37,7 +37,7 @@ test("downsampleByExtrema preserves endpoints, series onset, and peak/trough ext
   }));
 
   const sampled = downsampleByExtrema(rows, 150, (r) => [r.btc, r.sol, r.dd]);
-  assert.ok(sampled.length <= 155);
+  assert.ok(sampled.length <= 150);
   assert.equal(sampled[0].idx, 0);
   assert.equal(sampled[sampled.length - 1].idx, 1199);
 
@@ -50,6 +50,115 @@ test("downsampleByExtrema preserves endpoints, series onset, and peak/trough ext
   for (let i = 1; i < sampled.length; i += 1) {
     assert.ok(sampled[i].idx > sampled[i - 1].idx);
   }
+});
+
+test("downsampleByExtrema preserves independent multi-series multi-scale extrema without occlusion", () => {
+  // Test case with 3 widely differing value scales:
+  // - Series A: Large numbers (50,000 - 120,000 USD)
+  // - Series B: Small positive numbers (2 - 250 units)
+  // - Series C: Negative percentages (-99.5% to +5.0%) with onset at index 350
+  const rows = Array.from({ length: 1500 }, (_, i) => {
+    let seriesA = 50000 + (i % 500);
+    if (i === 210) seriesA = 25000; // Series A global min
+    if (i === 890) seriesA = 120000; // Series A global max
+
+    let seriesB = 50 + (i % 20);
+    if (i === 430) seriesB = 2; // Series B global min
+    if (i === 720) seriesB = 250; // Series B global max
+
+    let seriesC: number | null = i < 350 ? null : -20 - (i % 30);
+    if (i === 349) seriesC = null; // Series C onset null boundary
+    if (i === 350) seriesC = -20; // Series C first valid observation
+    if (i === 580) seriesC = -99.5; // Series C global min (trough)
+    if (i === 1100) seriesC = 5.0; // Series C global max (peak)
+
+    return { idx: i, seriesA, seriesB, seriesC };
+  });
+
+  const maxBudget = 150;
+  const sampled = downsampleByExtrema(rows, maxBudget, (r) => [
+    r.seriesA,
+    r.seriesB,
+    r.seriesC,
+  ]);
+
+  // 1. Point limit strictly enforced
+  assert.ok(
+    sampled.length <= maxBudget,
+    `Sampled points (${sampled.length}) must not exceed limit (${maxBudget})`
+  );
+
+  // 2. First and last observations strictly preserved
+  assert.equal(sampled[0].idx, 0, "First observation must be preserved");
+  assert.equal(
+    sampled[sampled.length - 1].idx,
+    1499,
+    "Last observation must be preserved"
+  );
+
+  // 3. Series onset boundaries strictly preserved
+  assert.ok(
+    sampled.some((r) => r.idx === 349 && r.seriesC === null),
+    "Preceding null at series onset must be preserved"
+  );
+  assert.ok(
+    sampled.some((r) => r.idx === 350 && r.seriesC === -20),
+    "First valid observation at series onset must be preserved"
+  );
+
+  // 4. Series A extrema preserved despite lower-scale series existing
+  assert.ok(
+    sampled.some((r) => r.idx === 210 && r.seriesA === 25000),
+    "Series A minimum (25,000) must be preserved despite Series B/C having smaller numbers"
+  );
+  assert.ok(
+    sampled.some((r) => r.idx === 890 && r.seriesA === 120000),
+    "Series A maximum (120,000) must be preserved"
+  );
+
+  // 5. Series B extrema preserved despite Series A having higher scale
+  assert.ok(
+    sampled.some((r) => r.idx === 430 && r.seriesB === 2),
+    "Series B minimum (2) must be preserved"
+  );
+  assert.ok(
+    sampled.some((r) => r.idx === 720 && r.seriesB === 250),
+    "Series B maximum (250) must be preserved despite Series A having 100x larger values"
+  );
+
+  // 6. Series C extrema preserved
+  assert.ok(
+    sampled.some((r) => r.idx === 580 && r.seriesC === -99.5),
+    "Series C minimum (-99.5) must be preserved"
+  );
+  assert.ok(
+    sampled.some((r) => r.idx === 1100 && r.seriesC === 5.0),
+    "Series C maximum (+5.0) must be preserved"
+  );
+
+  // 7. Strictly monotonic ordering
+  for (let i = 1; i < sampled.length; i += 1) {
+    assert.ok(
+      sampled[i].idx > sampled[i - 1].idx,
+      "Sampled indices must be strictly monotonic"
+    );
+  }
+});
+
+test("downsampleByExtrema handles mandatory points exceeding requested maxPoints gracefully", () => {
+  const rows = Array.from({ length: 50 }, (_, i) => ({
+    idx: i,
+    s1: i,
+    s2: i < 20 ? null : i,
+  }));
+  // Mandatory: idx 0, 49, 20 (first s2), 19 (preceding null). Total 4 mandatory points.
+  // Request maxPoints = 2 (smaller than mandatory points)
+  const sampled = downsampleByExtrema(rows, 2, (r) => [r.s1, r.s2]);
+  assert.equal(sampled.length, 4);
+  assert.equal(sampled[0].idx, 0);
+  assert.equal(sampled[1].idx, 19);
+  assert.equal(sampled[2].idx, 20);
+  assert.equal(sampled[3].idx, 49);
 });
 
 test("financial formatters return em-dash for null/non-finite values and format numbers cleanly", () => {

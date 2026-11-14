@@ -11,24 +11,26 @@ Command (inside `frontend/`):
 ```powershell
 npm test   # runs: node --test tests/*.test.mts
 ```
-Result: **PASS (`6 / 6` tests in `424.78ms`)**:
+Result: **PASS (`8 / 8` tests in `429.51ms`)**:
 - `healthLifecycle.test.mts` (`3 / 3`): Strict Mode lifecycle, stale request protection, deduplication & offline/retry recovery.
-- `phase3Helpers.test.mts` (`3 / 3`):
+- `phase3Helpers.test.mts` (`5 / 5`):
   - `REFERENCE_BACKTEST_CONFIG matches v1.0 FINAL_RESEARCH_REPORT reference settings`
   - `downsampleByExtrema preserves endpoints, series onset, and peak/trough extrema`
+  - `downsampleByExtrema preserves independent multi-series multi-scale extrema without occlusion` (Series A $50k-$120k, Series B 2-250, Series C -99.5% to +5% onset at 350; all individual extrema preserved without cross-series scale occlusion; length strictly respects limit)
+  - `downsampleByExtrema handles mandatory points exceeding requested maxPoints gracefully`
   - `financial formatters return em-dash for null/non-finite values and format numbers cleanly`
 
 ### 2. Frontend TypeScript, ESLint, and Production Build (`frontend/`)
-- `npx tsc --noEmit`: **PASS (exit code 0)**
-- `npm run lint`: **PASS (exit code 0)**
-- `npm run build`: **PASS (`Next.js 16.4.6 Turbopack`, compiled in `11.1s`, TypeScript in `9.6s`, `10/10` static pages generated in `1718ms`)**
+- `Push-Location frontend; npx tsc --noEmit; Pop-Location`: **PASS (exit code 0)**
+- `npm run lint --prefix frontend`: **PASS (exit code 0)**
+- `npm run build --prefix frontend`: **PASS (`Next.js 16.4.6 Turbopack`, compiled in `15.3s`, TypeScript in `9.1s`, `10/10` static pages generated in `1311ms`)**
 
-### 3. Live Playwright End-to-End Integration Verification (Headless Microsoft Edge, `reactStrictMode: true`)
+### 3. Reproducible Playwright End-to-End Integration Verification (`npm run test:e2e`)
 Command:
 ```powershell
-node C:\Users\Hitesh\.gemini\antigravity\brain\2ff53d6f-97c7-4886-ab62-f8c3e7b21c0c\scratch\pw\verify_phase3.mjs
+npm run test:e2e --prefix frontend   # runs: node e2e/verify_phase3.mjs
 ```
-Executed against live `uvicorn backend.main:app --port 8000` and `npm --prefix frontend run dev -- --port 3000`:
+Executed with automated background service startup against `uvicorn backend.main:app --port 8000` and `npm --prefix frontend run dev -- --port 3000` in headless Microsoft Edge (`msedge.exe`):
 - **Dashboard (`/dashboard`)**:
   - `/` redirected to `/dashboard`; `API Connected` badge appeared cleanly.
   - All backend-computed KPIs rendered and reconciled: `$1,480.00` initial capital, `$585,970.46` final value, `39,492.60%` total return, `81.89%` CAGR, `-69.94%` max drawdown, `68.43%` volatility, `1.21` Sharpe, `95 / 1,830` switches / cash days.

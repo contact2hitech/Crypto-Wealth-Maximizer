@@ -19,8 +19,9 @@ This file tracks technical issues, architectural constraints, dataset caveats, a
 - **Observation**: `BoundedResponseCache` (`backend/services/cache.py`) caps entries by count (`BACKEND_CACHE_SIZE`, default `64`, max `256`), not total RAM consumed.
 - **Planned Optimization Review**: Measure memory footprint under multi-parameter workloads in Phase 5/6 and consider lowering default `BACKEND_CACHE_SIZE` or adding byte-weight estimation without introducing Redis.
 
-### `KI-015` — Offline Detection Poll Latency (`20s` interval) & `allowImportingTsExtensions` Note
-- **Observed**: `ApiHealthProvider` uses a `20_000 ms` visibility-aware background poll (`KI-015`), and `frontend/tsconfig.json` enables `"allowImportingTsExtensions": true` with `"noEmit": true` for Node 24 native `node --test`.
+### `KI-015` — Chart Downsampling Multi-Series Extrema Resolution & `allowImportingTsExtensions`
+- **Phase 3 Resolution**: `downsampleByExtrema` in `frontend/lib/charts/downsample.ts` was corrected to track minimum and maximum indices independently for every series in every bucket. This prevents cross-series scale occlusion (e.g., Bitcoin price ~$70k or strategy wealth ~$500k occluding Solana price ~$20 or drawdown percentages -69%), while strictly enforcing the `<= 450` maxPoints budget and gracefully preserving mandatory points.
+- **Node Test Note**: `frontend/tsconfig.json` enables `"allowImportingTsExtensions": true` with `"noEmit": true` so Node 24 native `node --test` can import `.ts` modules with full type checking.
 
 ### `KI-016` — Dashboard / Markets `useEffect` Strict Mode Fetch Behavior
 - **Observation**: In development (`reactStrictMode: true`), Dashboard (`POST /api/backtest/run`) and Markets (`GET /api/markets/prices`) run effect setup → cleanup abort → setup remount using per-effect `AbortController`. In production (`next build` / `next start`), Strict Mode does not double-invoke effects, and FastAPI's `BoundedResponseCache` makes repeat queries fast (`~166–170 ms` warm).
