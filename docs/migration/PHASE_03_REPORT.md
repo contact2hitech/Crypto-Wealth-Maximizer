@@ -17,23 +17,28 @@ Integrate the `/dashboard` and `/markets` Next.js App Router pages exclusively w
        - Evaluates minimum and maximum indices independently for every series in every bucket, eliminating cross-series scale occlusion.
        - Validates `maxPoints` strictly: requires a positive integer and throws an explicit `RangeError` for zero, negative, or non-integer budgets (preventing silent fallbacks).
        - *Normal budget vs Mandatory-boundary overflow exception*: The requested `maxPoints` budget is enforced during normal operation. If mandatory boundary points alone exceed the requested budget, all mandatory points are retained; this mandatory-boundary overflow is an intentional exception, not an algorithm failure, ensuring required financial and onset boundaries are never dropped or distorted.
-   - Created `frontend/components/charts/ClientChartFrame.tsx` and `frontend/components/charts/chartFormatters.ts` to hydrate Recharts `ResponsiveContainer` cleanly with zero SSR sizing warnings.
+   - Enhanced `frontend/components/charts/chartFormatters.ts` with `dateToUtcTimestamp`, `formatAxisTimestamp`, and `formatTooltipTimestamp` to support true continuous linear time-scale charts.
+   - Created `frontend/components/charts/ClientChartFrame.tsx` to hydrate Recharts `ResponsiveContainer` cleanly with zero SSR sizing warnings.
    - Enhanced `frontend/components/common/DataTable.tsx` with optional `pageSize` pagination (`Previous`/`Next` + row counts).
 2. **Dashboard Integration (`/dashboard`, `frontend/components/dashboard/DashboardClient.tsx`)**:
    - Connected to `POST /api/backtest/run` (reference configuration, `include_daily_trace: false` to omit ~1.3 MB of unneeded trace payload) and `GET /api/markets/summary`.
-   - Rendered all 9 backend-computed KPIs (`Initial Capital`, `Final Portfolio Value`, `Total Return`, `CAGR`, `Maximum Drawdown`, `Annualized Volatility`, `Sharpe Ratio (rf=0)`, `Switches`, `Cash Days`).
-   - Implemented Recharts **Portfolio Equity Curve vs Buy-and-Hold Benchmarks (BTC, ETH, SOL)** with Linear/Log scale toggle and `connectNulls={false}`.
-   - Implemented Recharts **Daily Underwater Drawdown (%)** area chart comparing Strategy A vs Bitcoin buy-and-hold drawdown.
-   - Implemented **Current / Ending Allocation**, **Reference Strategy Configuration Summary**, **Historical Market Overview**, **Benchmark Comparison Table**, **Paginated Position Switching History** (`pageSize={10}`), and **Important Research Limitations & Risk Disclosures**.
+   - Rendered all 9 backend-computed KPIs (`Initial Capital`, `Final Portfolio Value`, `Total Return`, `CAGR`, `Maximum Drawdown`, `Annualized Volatility`, `Sharpe Ratio (rf=0)`, `Switches`, `Cash Days`) arranged across 8 responsive metric cards (with Switches and Cash Days combined cleanly in Card 8).
+   - Added prominent **In-Sample Retrospective Research Baseline (2016–2026)** badge noting full-history retrospective scope and walk-forward out-of-sample period (2025–2026) in Robustness.
+   - Implemented Recharts **Portfolio Equity Curve vs Buy-and-Hold Benchmarks (BTC, ETH, SOL)** with true numeric time scale (`XAxis dataKey="timestamp" type="number" scale="time" domain={["dataMin", "dataMax"]}`), linear interpolation (`type="linear"`), Linear/Log scale toggle, and `connectNulls={false}`.
+   - Implemented Recharts **Daily Underwater Drawdown (%)** area chart comparing Strategy A vs Bitcoin buy-and-hold drawdown on a continuous numeric time scale with linear interpolation.
+   - Dynamically bound **Reference Strategy Configuration Summary** to `backtest.configuration` (falling back to `REFERENCE_BACKTEST_CONFIG`).
+   - Implemented **Current / Ending Allocation**, **Historical Market Overview**, **Benchmark Comparison Table**, **Paginated Position Switching History** (`pageSize={10}`), and **Important Research Limitations & Risk Disclosures**.
+   - **Benchmark Comparability Resolution**: Added an explicit **Evaluation Period** column (`2016-11-09 → 2026-11-09 (10.0 yrs)` vs Solana `2020-04-10 → 2026-11-09 (6.6 yrs)`), tagged Solana with `*Partial Window (Starts 2020-04-10)`, and added an amber **Benchmark Comparability Notice** banner explaining that Solana's 98.56% CAGR reflects a shorter post-launch bull window, with a direct link to the fair Common-Start comparison on Markets.
 3. **Markets Integration (`/markets`, `frontend/components/markets/MarketsClient.tsx`)**:
    - Connected to `GET /api/markets/prices` and `GET /api/markets/summary` with `start_date`, `end_date`, and `initial_capital=1480` query parameters.
    - Implemented date-range form controls (`Apply Range`, `Reset`), quick presets (`Full History 2016–2026`, `Common Start 2020–2026`, `Test Window 2025–2026`), and client-side date order validation (`start_date <= end_date`).
    - Rendered **Latest Closing Price Cards** (`Bitcoin`, `Ethereum`, `Solana`) and **Common-Start Date** card.
-   - Rendered three Recharts charts with `connectNulls={false}`: **Historical Closing Prices (USD)** (Linear/Log toggle), **Normalized Performance (100 = First Observation)** (Linear/Log toggle), and **Fair Three-Way Common-Start Comparison (`2020-04-10 = 100`)** with empty-state fallback when a pre-overlap window is selected.
+   - Rendered three Recharts charts on continuous numeric time scales (`dataKey="timestamp" type="number" scale="time"`) with linear interpolation (`type="linear"`) and `connectNulls={false}`: **Historical Closing Prices (USD)** (Linear/Log toggle), **Normalized Performance (100 = First Observation)** (Linear/Log toggle), and **Fair Three-Way Common-Start Comparison (`2020-04-10 = 100`)** with empty-state fallback when a pre-overlap window is selected.
    - Rendered **Buy-and-Hold Summary Table**, **Paginated Relative-Performance Crossovers Table** (`pageSize={12}`), **Per-Asset Data Quality Audit Table** (`valid_observations`, `missing_observations`, `non_positive_prices`, `outliers_over_50pct`, `duplicate_dates`), and explicit **Dataset Provenance & Missing-Data Caveats** (Solana pre-`2020-04-10` null preservation and Ethereum pre-`2017-11-09` provisional history disclosure).
 4. **Tests & Reproducible E2E Harness**:
-   - Added `frontend/tests/phase3Helpers.test.mts` (`8` helper tests; `11 / 11` total frontend unit tests passing), including multi-series multi-scale extrema preservation, strict positive-integer budget validation (`RangeError`), `maxPoints = 1`, and mandatory boundary overflow handling.
-   - Committed reproducible Playwright E2E test script to `frontend/e2e/verify_phase3.mjs` executable via `npm run test:e2e` (`playwright-core` added as devDependency). Verifies live Dashboard & Markets KPIs, Recharts curves, Linear/Log toggle, pagination, date filtering, client validation, mobile layout (390x844), and zero console/page errors.
+   - Created `frontend/tests/dashboardMarkets.test.mts` (`5` tests) covering chart timestamp formatters (`dateToUtcTimestamp`, `formatAxisTimestamp`, `formatTooltipTimestamp`), timestamp monotonicity and elapsed calendar day proportionality, benchmark table evaluation period transformations and Solana partial-window tagging, dynamic config fallback, and Markets common-start filtering logic.
+   - Maintained `frontend/tests/phase3Helpers.test.mts` (`8` tests) and `frontend/tests/healthLifecycle.test.mts` (`3` tests) — bringing total frontend unit tests to `16 / 16` passing.
+   - Hardened `frontend/e2e/verify_phase3.mjs` with pre-flight port availability checking (`checkPortAvailable` for ports 8000 and 3000) and premature child process crash detection, guaranteeing tests never execute against stale pre-existing server instances. Verified live Dashboard & Markets KPIs, Recharts curves, Linear/Log toggle, pagination, date filtering, client validation, mobile layout (390x844), and zero console/page errors.
 
 ## 4. Files Created
 - `frontend/components/charts/ClientChartFrame.tsx`
@@ -43,8 +48,10 @@ Integrate the `/dashboard` and `/markets` Next.js App Router pages exclusively w
 - `frontend/lib/charts/downsample.ts`
 - `frontend/lib/constants/referenceConfig.ts`
 - `frontend/tests/phase3Helpers.test.mts`
+- `frontend/tests/dashboardMarkets.test.mts`
 - `frontend/e2e/verify_phase3.mjs`
 - `docs/migration/PHASE_03_REPORT.md` (this file)
+- `docs/migration/PHASE_03_EXTERNAL_REVIEW_CLOSURE.md`
 
 ## 5. Files Modified
 - `frontend/app/dashboard/page.tsx`
@@ -52,6 +59,7 @@ Integrate the `/dashboard` and `/markets` Next.js App Router pages exclusively w
 - `frontend/components/common/DataTable.tsx`
 - `frontend/package.json` (added `playwright-core` devDependency and `test:e2e` script)
 - `frontend/.gitignore` (added `/e2e/screenshots`)
+- `.gitignore` (added `/package-lock.json`)
 - `docs/migration/PROJECT_STATUS.md`
 - `docs/migration/CURRENT_PHASE.md`
 - `docs/migration/NEXT_ACTIONS.md`
@@ -69,9 +77,19 @@ Verified via `git diff 49eeb2e -- backend app.py crypto_engine.py strategy_engin
    - **Budget Validation**: Requires `maxPoints` to be a positive integer, throwing a clear `RangeError` for `<= 0`, negative, or non-integer budgets.
    - **Normal Operation**: The requested `maxPoints` budget (default 450) is enforced during normal operation, tracking independent bucket extrema per series to prevent multi-scale occlusion.
    - **Mandatory-Boundary Overflow Exception**: If mandatory boundary points alone exceed the requested budget (e.g. `maxPoints = 1` or `2`), all mandatory points are retained. This is an intentional exception, not an algorithm failure, ensuring required financial and onset boundaries are never dropped or distorted.
-2. **Selective Payload Control (`include_daily_trace: false`)**: Dashboard omits the 17-column daily drawdown execution trace (~1.3 MB) since Risk Lab owns trace inspection in Phase 4.
-3. **`connectNulls={false}` & Overlap Windowing**: Markets preserves `null` pre-`2020-04-10` Solana prices across charts and slices Chart 3 (`Common-Start Comparison`) to `date >= common_start_date` (`2020-04-10 = 100`), matching `app.py` Section 3 behavior.
-4. **Client-Side Pagination in `DataTable`**: Large tables (`95` switching rows, crossovers) paginate cleanly (`10` / `12` rows per page) without bloated DOM tables.
+2. **True Continuous Numeric Time Scales (`scale="time"`) & Linear Interpolation**:
+   - Replaced categorical string date axes (`<XAxis dataKey="date" />`) with true numeric UTC timestamp axes (`<XAxis dataKey="timestamp" type="number" scale="time" domain={["dataMin", "dataMax"]} />`).
+   - Categorical axes compress time whenever downsampling yields non-uniform gaps (1 to 31 days). Numeric time axes ensure horizontal screen distances are strictly proportional to calendar elapsed days.
+   - Switched curves from `type="monotone"` (which produces Hermite spline overshoots/wobbles across irregular intervals) to `type="linear"`, accurately connecting financial discrete daily closes without phantom intraday humps.
+3. **Benchmark Comparability Resolution**:
+   - Clarified differing evaluation horizons: Strategy A, Bitcoin, and Ethereum span 10.0 years (`2016-11-09 → 2026-11-09`), while Solana begins on `2020-04-10` (`6.6 yrs`).
+   - Added an explicit `Evaluation Period` column to the Benchmark Comparison table and an amber comparability banner detailing the bull-biased nature of Solana's 6.6-year window, linking to Markets for fair common-start analysis.
+4. **9 KPIs Across 8 Responsive Cards**:
+   - Initial Capital ($1,480.00), Final Portfolio Value ($585,970.46), Total Return (39,492.60%), Maximum Drawdown (-69.94%), CAGR (81.89%), Annualized Volatility (68.43%), Sharpe Ratio (1.21), and Switches / Cash Days (95 / 1,830) — 9 distinct financial KPIs presented across 8 responsive card containers.
+5. **Selective Payload Control (`include_daily_trace: false`)**: Dashboard omits the 17-column daily drawdown execution trace (~1.3 MB) since Risk Lab owns trace inspection in Phase 4.
+6. **`connectNulls={false}` & Overlap Windowing**: Markets preserves `null` pre-`2020-04-10` Solana prices across charts and slices Chart 3 (`Common-Start Comparison`) to `date >= common_start_date` (`2020-04-10 = 100`), matching `app.py` Section 3 behavior.
+7. **Client-Side Pagination in `DataTable`**: Large tables (`95` switching rows, crossovers) paginate cleanly (`10` / `12` rows per page) without bloated DOM tables.
+8. **E2E Clean-Port Preflight & Process Safety**: `verify_phase3.mjs` verifies ports 8000 and 3000 are available before launching, attaches premature exit listeners to child processes, and performs graceful tree process termination.
 
 ## 8. API Endpoints Consumed & Data Reconciliation
 - **`POST /api/backtest/run`** (Dashboard):
@@ -82,13 +100,13 @@ Verified via `git diff 49eeb2e -- backend app.py crypto_engine.py strategy_engin
 ## 9. Tests Executed & Actual Test Results
 | Suite / Check | Command | Result |
 |---|---|---|
-| Frontend Unit Tests | `npm test` (`node --test tests/*.test.mts`) | **PASS (`11 / 11` in `532.67ms`)** |
+| Frontend Unit Tests | `npm test` (`node --test tests/*.test.mts`) | **PASS (`16 / 16` in `1.17s`)** |
 | TypeScript Check | `Push-Location frontend; npx tsc --noEmit; Pop-Location` | **PASS (exit 0)** |
-| ESLint Check | `npm run lint` (in `frontend/`) | **PASS (exit 0)** |
-| Next.js Production Build | `npm run build` (in `frontend/`) | **PASS (exit 0; `10/10` static pages in `1311ms`)** |
-| Playwright E2E Integration (Headless Microsoft Edge, `reactStrictMode: true`) | `npm run test:e2e --prefix frontend` (runs `node e2e/verify_phase3.mjs`) | **PASS (`0` console/page errors; Dashboard & Markets KPIs reconciled; Recharts curves, Linear/Log toggle, date-range filtering, pagination, and `390x844` mobile layout verified)** |
-| Backend API & Parity Suite | `.\venv\Scripts\python.exe -m unittest discover -s backend/tests -v` | **PASS (`21 / 21` in `68.003s`, `OK`)** |
-| Original v1.0 Unit Suite | `.\venv\Scripts\python.exe -m unittest discover -s tests -v` | **PASS (`26 / 26` in `50.605s`, `OK`)** |
+| ESLint Check | `npm run lint` (in `frontend/`) | **PASS (exit 0, 0 warnings)** |
+| Next.js Production Build | `npm run build` (in `frontend/`) | **PASS (exit 0; `10/10` static pages generated)** |
+| Playwright E2E Integration (Headless Microsoft Edge, `reactStrictMode: true`) | `npm run test:e2e --prefix frontend` (runs `node e2e/verify_phase3.mjs`) | **PASS (`0` console/page errors; Dashboard & Markets KPIs reconciled; numeric time scales, Recharts curves, Linear/Log toggle, date-range filtering, pagination, and `390x844` mobile layout verified on clean fresh ports)** |
+| Backend API & Parity Suite | `.\venv\Scripts\python.exe -m unittest discover -s backend/tests -v` | **PASS (`21 / 21` in `85.62s`, `OK`)** |
+| Original v1.0 Unit Suite | `.\venv\Scripts\python.exe -m unittest discover -s tests -v` | **PASS (`26 / 26` in `59.64s`, `OK`)** |
 
 ## 10. Commands Executed
 ```powershell
@@ -129,7 +147,7 @@ Visually inspected screenshots in scratch folder: `phase3_dashboard_desktop.png`
 - [x] Markets displays latest close cards, date-range filtering, USD prices, normalized performance, common-start (`2020-04-10 = 100`) comparison, paginated crossovers, buy-and-hold summary, and per-asset data quality audit.
 - [x] Pre-launch `null` Solana observations preserved (`connectNulls={false}`) and Ethereum historical provenance caveat clearly disclosed.
 - [x] Zero financial metric calculations performed in TypeScript; zero fabricated data.
-- [x] `npm test` (`11/11`), `npx tsc --noEmit`, `npm run lint`, `npm run build`, Playwright live integration, `backend/tests` (`21/21`), and `tests` (`26/26`) all pass.
+- [x] `npm test` (`16/16`), `npx tsc --noEmit`, `npm run lint`, `npm run build`, Playwright live integration on clean ports, `backend/tests` (`21/21`), and `tests` (`26/26`) all pass.
 - [x] Phase 3 set to `COMPLETED — AWAITING EXTERNAL REVIEW`; Phase 4 not started.
 
 ## 15. Recommended Next Steps

@@ -32,9 +32,11 @@ import type {
 import { ChartContainer } from "@/components/charts/ChartContainer";
 import { ClientChartFrame } from "@/components/charts/ClientChartFrame";
 import {
-  formatAxisDate,
+  dateToUtcTimestamp,
+  formatAxisTimestamp,
   formatCompactIndexAxis,
   formatCompactUsdAxis,
+  formatTooltipTimestamp,
 } from "@/components/charts/chartFormatters";
 import { CHART_COLORS } from "@/components/charts/chartTheme";
 import { DataQualityBadge } from "@/components/common/DataQualityBadge";
@@ -156,7 +158,11 @@ export function MarketsClient() {
 
   const sampledPrices = useMemo<DailyAssetPoint[]>(() => {
     if (!pricesData) return [];
-    return downsampleByExtrema(pricesData.prices, CHART_MAX_POINTS, (p) => [
+    const withTimestamp = pricesData.prices.map((p) => ({
+      ...p,
+      timestamp: dateToUtcTimestamp(p.date),
+    }));
+    return downsampleByExtrema(withTimestamp, CHART_MAX_POINTS, (p) => [
       p.Bitcoin,
       p.Ethereum,
       p.Solana,
@@ -165,7 +171,11 @@ export function MarketsClient() {
 
   const sampledNormalized = useMemo<DailyAssetPoint[]>(() => {
     if (!pricesData) return [];
-    return downsampleByExtrema(pricesData.normalized_indices, CHART_MAX_POINTS, (p) => [
+    const withTimestamp = pricesData.normalized_indices.map((p) => ({
+      ...p,
+      timestamp: dateToUtcTimestamp(p.date),
+    }));
+    return downsampleByExtrema(withTimestamp, CHART_MAX_POINTS, (p) => [
       p.Bitcoin,
       p.Ethereum,
       p.Solana,
@@ -174,9 +184,12 @@ export function MarketsClient() {
 
   const sampledCommonStart = useMemo<DailyAssetPoint[]>(() => {
     if (!pricesData || !pricesData.common_start_date) return [];
-    const overlapOnly = pricesData.common_start_indices.filter(
-      (pt) => pt.date >= pricesData.common_start_date!
-    );
+    const overlapOnly = pricesData.common_start_indices
+      .filter((pt) => pt.date >= pricesData.common_start_date!)
+      .map((p) => ({
+        ...p,
+        timestamp: dateToUtcTimestamp(p.date),
+      }));
     return downsampleByExtrema(overlapOnly, CHART_MAX_POINTS, (p) => [
       p.Bitcoin,
       p.Ethereum,
@@ -557,11 +570,14 @@ export function MarketsClient() {
             <LineChart data={sampledPrices} margin={{ top: 8, right: 12, left: 6, bottom: 4 }}>
               <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
               <XAxis
-                dataKey="date"
-                tickFormatter={formatAxisDate}
+                dataKey="timestamp"
+                type="number"
+                scale="time"
+                domain={["dataMin", "dataMax"]}
+                tickFormatter={formatAxisTimestamp}
                 stroke={CHART_COLORS.axisText}
                 fontSize={11}
-                minTickGap={36}
+                minTickGap={40}
               />
               <YAxis
                 scale={priceScale}
@@ -579,10 +595,11 @@ export function MarketsClient() {
                   fontSize: "12px",
                 }}
                 labelStyle={{ color: "#e2e8f0", fontFamily: "var(--font-geist-mono)" }}
+                labelFormatter={(label) => formatTooltipTimestamp(label)}
                 formatter={(value) => [typeof value === "number" ? formatUsd(value) : "—"]}
               />
               <Line
-                type="monotone"
+                type="linear"
                 dataKey="Bitcoin"
                 stroke={CHART_COLORS.bitcoin}
                 strokeWidth={1.75}
@@ -591,7 +608,7 @@ export function MarketsClient() {
                 isAnimationActive={false}
               />
               <Line
-                type="monotone"
+                type="linear"
                 dataKey="Ethereum"
                 stroke={CHART_COLORS.ethereum}
                 strokeWidth={1.75}
@@ -600,7 +617,7 @@ export function MarketsClient() {
                 isAnimationActive={false}
               />
               <Line
-                type="monotone"
+                type="linear"
                 dataKey="Solana"
                 stroke={CHART_COLORS.solana}
                 strokeWidth={1.75}
@@ -647,11 +664,14 @@ export function MarketsClient() {
           <LineChart data={sampledNormalized} margin={{ top: 8, right: 12, left: 6, bottom: 4 }}>
             <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
             <XAxis
-              dataKey="date"
-              tickFormatter={formatAxisDate}
+              dataKey="timestamp"
+              type="number"
+              scale="time"
+              domain={["dataMin", "dataMax"]}
+              tickFormatter={formatAxisTimestamp}
               stroke={CHART_COLORS.axisText}
               fontSize={11}
-              minTickGap={36}
+              minTickGap={40}
             />
             <YAxis
               scale={normScale}
@@ -669,12 +689,13 @@ export function MarketsClient() {
                 fontSize: "12px",
               }}
               labelStyle={{ color: "#e2e8f0", fontFamily: "var(--font-geist-mono)" }}
+              labelFormatter={(label) => formatTooltipTimestamp(label)}
               formatter={(value) => [
                 typeof value === "number" ? formatRatio(value, 2) : "—",
               ]}
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="Bitcoin"
               stroke={CHART_COLORS.bitcoin}
               strokeWidth={1.75}
@@ -683,7 +704,7 @@ export function MarketsClient() {
               isAnimationActive={false}
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="Ethereum"
               stroke={CHART_COLORS.ethereum}
               strokeWidth={1.75}
@@ -692,7 +713,7 @@ export function MarketsClient() {
               isAnimationActive={false}
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="Solana"
               stroke={CHART_COLORS.solana}
               strokeWidth={1.75}
@@ -724,11 +745,14 @@ export function MarketsClient() {
           <LineChart data={sampledCommonStart} margin={{ top: 8, right: 12, left: 6, bottom: 4 }}>
             <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
             <XAxis
-              dataKey="date"
-              tickFormatter={formatAxisDate}
+              dataKey="timestamp"
+              type="number"
+              scale="time"
+              domain={["dataMin", "dataMax"]}
+              tickFormatter={formatAxisTimestamp}
               stroke={CHART_COLORS.axisText}
               fontSize={11}
-              minTickGap={36}
+              minTickGap={40}
             />
             <YAxis
               tickFormatter={formatCompactIndexAxis}
@@ -744,12 +768,13 @@ export function MarketsClient() {
                 fontSize: "12px",
               }}
               labelStyle={{ color: "#e2e8f0", fontFamily: "var(--font-geist-mono)" }}
+              labelFormatter={(label) => formatTooltipTimestamp(label)}
               formatter={(value) => [
                 typeof value === "number" ? formatRatio(value, 2) : "—",
               ]}
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="Bitcoin"
               stroke={CHART_COLORS.bitcoin}
               strokeWidth={1.75}
@@ -758,7 +783,7 @@ export function MarketsClient() {
               isAnimationActive={false}
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="Ethereum"
               stroke={CHART_COLORS.ethereum}
               strokeWidth={1.75}
@@ -767,7 +792,7 @@ export function MarketsClient() {
               isAnimationActive={false}
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="Solana"
               stroke={CHART_COLORS.solana}
               strokeWidth={1.75}

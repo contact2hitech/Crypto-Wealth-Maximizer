@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
+import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright-core";
@@ -42,9 +43,24 @@ function findBrowserExe() {
   throw new Error("Could not find Edge or Chrome executable. Set EDGE_PATH or CHROME_PATH environment variable.");
 }
 
-async function waitForHttp(url, timeoutMs = 45000) {
+function checkPortAvailable(port, host = "127.0.0.1") {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.once("error", () => resolve(false));
+    server.once("listening", () => {
+      server.close(() => resolve(true));
+    });
+    server.listen(port, host);
+  });
+}
+
+async function waitForHttp(url, checkExitFn, timeoutMs = 45000) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
+    if (checkExitFn) {
+      const exitErr = checkExitFn();
+      if (exitErr) throw new Error(exitErr);
+    }
     try {
       const res = await fetch(url);
       if (res.ok) return;
@@ -109,21 +125,47 @@ let browser = null;
 try {
   fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
 
+  const port8000Free = await checkPortAvailable(8000);
+  if (!port8000Free) {
+    throw new Error(
+      "Port 8000 is already in use. Ensure all stale backend instances are killed before running E2E tests."
+    );
+  }
+  const port3000Free = await checkPortAvailable(3000);
+  if (!port3000Free) {
+    throw new Error(
+      "Port 3000 is already in use. Ensure all stale Next.js dev instances are killed before running E2E tests."
+    );
+  }
+
   const pythonExe = findPythonExe();
   const browserExe = findBrowserExe();
   console.log(`Using Python: ${pythonExe}`);
   console.log(`Using Browser: ${browserExe}`);
 
+  let backendExitReason = null;
+  let frontendExitReason = null;
+
   backendProc = startBackend(pythonExe);
+  backendProc.on("exit", (code, signal) => {
+    if (code !== null && code !== 0) {
+      backendExitReason = `Backend process exited prematurely with code ${code} signal ${signal}`;
+    }
+  });
   backendProc.stdout?.on("data", (d) => console.log("[backend stdout]", d.toString().trim()));
   backendProc.stderr?.on("data", (d) => console.error("[backend stderr]", d.toString().trim()));
 
   frontendProc = startFrontend();
+  frontendProc.on("exit", (code, signal) => {
+    if (code !== null && code !== 0) {
+      frontendExitReason = `Frontend process exited prematurely with code ${code} signal ${signal}`;
+    }
+  });
   frontendProc.stdout?.on("data", (d) => console.log("[frontend stdout]", d.toString().trim()));
   frontendProc.stderr?.on("data", (d) => console.error("[frontend stderr]", d.toString().trim()));
 
-  await waitForHttp("http://127.0.0.1:8000/api/health", 30000);
-  await waitForHttp("http://localhost:3000/dashboard", 60000);
+  await waitForHttp("http://127.0.0.1:8000/api/health", () => backendExitReason, 30000);
+  await waitForHttp("http://localhost:3000/dashboard", () => frontendExitReason ?? backendExitReason, 60000);
   console.log("Servers ready for Phase 3 integration test.");
 
   browser = await chromium.launch({
@@ -171,6 +213,10 @@ try {
     "$152,438.67",
     "Buy & hold: Ethereum",
     "Buy & hold: Solana",
+    "In-Sample Retrospective Research Baseline (2016–2026)",
+    "Benchmark Comparability Notice",
+    "Partial Window (Starts 2020-04-10)",
+    "2016-11-09 → 2026-11-09",
   ]) {
     assert.ok(dashboardText.includes(expected), `Dashboard missing expected metric: ${expected}`);
   }

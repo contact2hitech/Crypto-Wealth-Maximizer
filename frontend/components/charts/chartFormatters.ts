@@ -19,3 +19,41 @@ export function formatAxisDate(dateStr: string): string {
   return dateStr.slice(0, 7);
 }
 
+/**
+ * Converts a UTC date string ("YYYY-MM-DD") to an epoch millisecond timestamp
+ * for linear time-scale charts.
+ */
+export function dateToUtcTimestamp(dateStr: string): number {
+  return Date.parse(`${dateStr}T00:00:00Z`);
+}
+
+/**
+ * Formats a numeric UTC timestamp for XAxis ticks as "YYYY-MM" (or "YYYY").
+ */
+export function formatAxisTimestamp(value: unknown): string {
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return "";
+    const d = new Date(value);
+    const year = d.getUTCFullYear();
+    const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+    return `${year}-${month}`;
+  }
+  return formatAxisDate(String(value ?? ""));
+}
+
+/**
+ * Formats a numeric UTC timestamp for tooltips as "YYYY-MM-DD".
+ */
+export function formatTooltipTimestamp(value: unknown): string {
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return "";
+    const d = new Date(value);
+    const year = d.getUTCFullYear();
+    const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(d.getUTCDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+  return String(value ?? "");
+}
+
+

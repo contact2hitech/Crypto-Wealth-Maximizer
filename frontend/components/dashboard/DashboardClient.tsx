@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import {
   Activity,
+  AlertTriangle,
   ArrowUpRight,
   Calendar,
   Coins,
@@ -40,8 +41,10 @@ import type {
 import { ChartContainer } from "@/components/charts/ChartContainer";
 import { ClientChartFrame } from "@/components/charts/ClientChartFrame";
 import {
-  formatAxisDate,
+  dateToUtcTimestamp,
+  formatAxisTimestamp,
   formatCompactUsdAxis,
+  formatTooltipTimestamp,
 } from "@/components/charts/chartFormatters";
 import { CHART_COLORS } from "@/components/charts/chartTheme";
 import { DataQualityBadge } from "@/components/common/DataQualityBadge";
@@ -57,6 +60,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface CombinedEquityChartRow {
   date: string;
+  timestamp: number;
   strategy: number | null;
   bitcoin: number | null;
   ethereum: number | null;
@@ -65,6 +69,7 @@ interface CombinedEquityChartRow {
 
 interface DrawdownChartRow {
   date: string;
+  timestamp: number;
   strategy_dd: number | null;
   bitcoin_dd: number | null;
 }
@@ -72,6 +77,9 @@ interface DrawdownChartRow {
 interface ComparisonTableRow {
   key: string;
   label: string;
+  period_label: string;
+  horizon_years: string;
+  is_partial?: boolean;
   final_value_usd: number | null;
   total_return_pct: number | null;
   cagr_pct: number | null;
@@ -149,6 +157,7 @@ export function DashboardClient() {
 
     const merged: CombinedEquityChartRow[] = backtest.equity_curve.map((pt) => ({
       date: pt.date,
+      timestamp: dateToUtcTimestamp(pt.date),
       strategy: pt.value_usd,
       bitcoin: btcMap.get(pt.date) ?? null,
       ethereum: ethMap.get(pt.date) ?? null,
@@ -170,6 +179,7 @@ export function DashboardClient() {
     );
     const merged: DrawdownChartRow[] = backtest.equity_curve.map((pt) => ({
       date: pt.date,
+      timestamp: dateToUtcTimestamp(pt.date),
       strategy_dd: pt.drawdown_pct,
       bitcoin_dd: btcDdMap.get(pt.date) ?? null,
     }));
@@ -182,9 +192,17 @@ export function DashboardClient() {
 
   const comparisonRows = useMemo<ComparisonTableRow[]>(() => {
     if (!backtest) return [];
+    const fullStart = backtest.date_range.start_date;
+    const fullEnd = backtest.date_range.end_date;
+    const fullDays = backtest.date_range.row_count;
+    const fullYears = (fullDays / 365.25).toFixed(1);
+
     const strategyRow: ComparisonTableRow = {
       key: "strategy",
       label: `${backtest.summary.strategy} (Combined Protection)`,
+      period_label: `${fullStart} → ${fullEnd}`,
+      horizon_years: `${fullYears} yrs`,
+      is_partial: false,
       final_value_usd: backtest.summary.final_value_usd,
       total_return_pct: backtest.summary.total_return_pct,
       cagr_pct: backtest.summary.cagr_pct,
@@ -194,18 +212,30 @@ export function DashboardClient() {
       switches: backtest.summary.switches,
       cash_days: backtest.summary.cash_days,
     };
-    const benchmarkRows: ComparisonTableRow[] = backtest.benchmark_summaries.map((b) => ({
-      key: b.strategy,
-      label: b.strategy,
-      final_value_usd: b.final_value_usd,
-      total_return_pct: b.total_return_pct,
-      cagr_pct: b.cagr_pct,
-      maximum_drawdown_pct: b.maximum_drawdown_pct,
-      annualized_volatility_pct: b.annualized_volatility_pct,
-      sharpe_rf0: b.sharpe_rf0,
-      switches: b.switches,
-      cash_days: b.cash_days,
-    }));
+    const benchmarkRows: ComparisonTableRow[] = backtest.benchmark_summaries.map((b) => {
+      const isSolana = b.strategy.toLowerCase().includes("solana");
+      const solStart = "2020-04-10";
+      const periodStart = isSolana ? solStart : fullStart;
+      const startMs = Date.parse(`${periodStart}T00:00:00Z`);
+      const endMs = Date.parse(`${fullEnd}T00:00:00Z`);
+      const years = ((endMs - startMs) / (86400000 * 365.25)).toFixed(1);
+
+      return {
+        key: b.strategy,
+        label: b.strategy,
+        period_label: `${periodStart} → ${fullEnd}`,
+        horizon_years: `${years} yrs`,
+        is_partial: isSolana,
+        final_value_usd: b.final_value_usd,
+        total_return_pct: b.total_return_pct,
+        cagr_pct: b.cagr_pct,
+        maximum_drawdown_pct: b.maximum_drawdown_pct,
+        annualized_volatility_pct: b.annualized_volatility_pct,
+        sharpe_rf0: b.sharpe_rf0,
+        switches: b.switches,
+        cash_days: b.cash_days,
+      };
+    });
     return [strategyRow, ...benchmarkRows];
   }, [backtest]);
 
@@ -223,7 +253,29 @@ export function DashboardClient() {
     {
       key: "label",
       header: "Strategy / Benchmark",
-      render: (r) => <span className="font-medium text-foreground">{r.label}</span>,
+      render: (r) => (
+        <div className="space-y-0.5">
+          <span className="font-medium text-foreground">{r.label}</span>
+          {r.is_partial ? (
+            <div>
+              <span className="inline-flex items-center rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-300">
+                *Partial Window (Starts 2020-04-10)
+              </span>
+            </div>
+          ) : null}
+        </div>
+      ),
+    },
+    {
+      key: "period",
+      header: "Evaluation Period",
+      numeric: true,
+      render: (r) => (
+        <div className="text-xs font-mono tabular-nums leading-tight">
+          <div className="text-foreground">{r.period_label}</div>
+          <div className="text-[11px] text-muted-foreground">({r.horizon_years})</div>
+        </div>
+      ),
     },
     {
       key: "final_value",
@@ -326,6 +378,7 @@ export function DashboardClient() {
   ];
 
   const summary = backtest?.summary;
+  const activeConfig = backtest?.configuration ?? REFERENCE_BACKTEST_CONFIG;
 
   return (
     <div className="space-y-6">
@@ -374,6 +427,21 @@ export function DashboardClient() {
           <MetricGridSkeleton count={8} />
         </div>
       ) : null}
+
+      {/* In-Sample Retrospective Research Baseline Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3.5 py-2.5 text-xs text-sky-200">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center rounded bg-sky-500/20 px-2 py-0.5 font-semibold text-sky-300">
+            In-Sample Retrospective Research Baseline (2016–2026)
+          </span>
+          <span className="text-sky-200/90 hidden md:inline">
+            Full-history retrospective backtest; out-of-sample walk-forward test period (2025–2026) is evaluated in Robustness.
+          </span>
+        </div>
+        <span className="text-sky-300/80 font-mono text-[11px]">
+          Evaluation: 2016-11-09 → 2026-11-09 (10.0 yrs)
+        </span>
+      </div>
 
       {/* Core Performance KPIs */}
       <section aria-label="Portfolio performance KPIs" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -503,11 +571,14 @@ export function DashboardClient() {
             <LineChart data={equityChartData} margin={{ top: 8, right: 12, left: 6, bottom: 4 }}>
               <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
               <XAxis
-                dataKey="date"
-                tickFormatter={formatAxisDate}
+                dataKey="timestamp"
+                type="number"
+                scale="time"
+                domain={["dataMin", "dataMax"]}
+                tickFormatter={formatAxisTimestamp}
                 stroke={CHART_COLORS.axisText}
                 fontSize={11}
-                minTickGap={36}
+                minTickGap={40}
               />
               <YAxis
                 scale={equityScale}
@@ -525,12 +596,13 @@ export function DashboardClient() {
                   fontSize: "12px",
                 }}
                 labelStyle={{ color: "#e2e8f0", fontFamily: "var(--font-geist-mono)" }}
+                labelFormatter={(label) => formatTooltipTimestamp(label)}
                 formatter={(value) => [
                   typeof value === "number" ? formatUsd(value) : "—",
                 ]}
               />
               <Line
-                type="monotone"
+                type="linear"
                 dataKey="strategy"
                 name="Strategy A (Combined)"
                 stroke={CHART_COLORS.strategy}
@@ -540,7 +612,7 @@ export function DashboardClient() {
                 isAnimationActive={false}
               />
               <Line
-                type="monotone"
+                type="linear"
                 dataKey="bitcoin"
                 name="Bitcoin Buy & Hold"
                 stroke={CHART_COLORS.bitcoin}
@@ -550,7 +622,7 @@ export function DashboardClient() {
                 isAnimationActive={false}
               />
               <Line
-                type="monotone"
+                type="linear"
                 dataKey="ethereum"
                 name="Ethereum Buy & Hold"
                 stroke={CHART_COLORS.benchmark}
@@ -560,7 +632,7 @@ export function DashboardClient() {
                 isAnimationActive={false}
               />
               <Line
-                type="monotone"
+                type="linear"
                 dataKey="solana"
                 name="Solana Buy & Hold"
                 stroke={CHART_COLORS.solana}
@@ -600,11 +672,14 @@ export function DashboardClient() {
             <AreaChart data={drawdownChartData} margin={{ top: 8, right: 12, left: 6, bottom: 4 }}>
               <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
               <XAxis
-                dataKey="date"
-                tickFormatter={formatAxisDate}
+                dataKey="timestamp"
+                type="number"
+                scale="time"
+                domain={["dataMin", "dataMax"]}
+                tickFormatter={formatAxisTimestamp}
                 stroke={CHART_COLORS.axisText}
                 fontSize={11}
-                minTickGap={36}
+                minTickGap={40}
               />
               <YAxis
                 domain={[-100, 0]}
@@ -621,12 +696,13 @@ export function DashboardClient() {
                   fontSize: "12px",
                 }}
                 labelStyle={{ color: "#e2e8f0", fontFamily: "var(--font-geist-mono)" }}
+                labelFormatter={(label) => formatTooltipTimestamp(label)}
                 formatter={(value) => [
                   typeof value === "number" ? formatPercent(value) : "—",
                 ]}
               />
               <Area
-                type="monotone"
+                type="linear"
                 dataKey="strategy_dd"
                 name="Strategy A Drawdown"
                 stroke={CHART_COLORS.drawdown}
@@ -637,7 +713,7 @@ export function DashboardClient() {
                 isAnimationActive={false}
               />
               <Area
-                type="monotone"
+                type="linear"
                 dataKey="bitcoin_dd"
                 name="Bitcoin Drawdown"
                 stroke={CHART_COLORS.bitcoin}
@@ -713,27 +789,27 @@ export function DashboardClient() {
           <CardContent className="grid grid-cols-2 gap-x-4 gap-y-2 pt-4 text-xs">
             <span className="text-muted-foreground">Strategy</span>
             <span className="text-right font-medium text-foreground">
-              {backtest?.configuration.strategy ?? REFERENCE_BACKTEST_CONFIG.strategy}
+              {activeConfig.strategy}
             </span>
             <span className="text-muted-foreground">Initialization</span>
             <span className="text-right text-foreground">
-              {backtest?.configuration.initialization_mode ?? REFERENCE_BACKTEST_CONFIG.initialization_mode}
+              {activeConfig.initialization_mode}
             </span>
             <span className="text-muted-foreground">Rebalancing / Min Hold</span>
             <span className="text-right font-mono tabular-nums text-foreground">
-              {REFERENCE_BACKTEST_CONFIG.rebalance_frequency} / {REFERENCE_BACKTEST_CONFIG.minimum_holding_days}d
+              {activeConfig.rebalance_frequency} / {activeConfig.minimum_holding_days}d
             </span>
             <span className="text-muted-foreground">Switch Threshold / Fee</span>
             <span className="text-right font-mono tabular-nums text-foreground">
-              {REFERENCE_BACKTEST_CONFIG.switching_threshold_pct}% / {REFERENCE_BACKTEST_CONFIG.fee_bps_per_switch} bps
+              {activeConfig.switching_threshold_pct}% / {activeConfig.fee_bps_per_switch} bps
             </span>
             <span className="text-muted-foreground">Cash Filter / DD Stop</span>
             <span className="text-right font-mono tabular-nums text-foreground">
-              On / {REFERENCE_BACKTEST_CONFIG.drawdown_protection_pct}%
+              {activeConfig.enable_cash_filter ? "On" : "Off"} / {activeConfig.drawdown_protection_pct}%
             </span>
             <span className="text-muted-foreground">Recovery Score / Warmup</span>
             <span className="text-right font-mono tabular-nums text-foreground">
-              {REFERENCE_BACKTEST_CONFIG.cash_reentry_score_pct}% / Eval window
+              {activeConfig.cash_reentry_score_pct}% / {backtest ? (backtest.warmup_mode === "evaluation_window_only" ? "Eval window" : backtest.warmup_mode) : "Eval window"}
             </span>
           </CardContent>
         </Card>
@@ -789,9 +865,36 @@ export function DashboardClient() {
 
       {/* Benchmark Comparison Table */}
       <section className="space-y-3" aria-label="Strategy vs Buy-and-Hold Benchmarks">
-        <h2 className="text-sm font-medium text-foreground">
-          Reference Strategy vs Buy-and-Hold Benchmarks
-        </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <h2 className="text-sm font-medium text-foreground">
+            Reference Strategy vs Buy-and-Hold Benchmarks
+          </h2>
+          <span className="text-xs text-muted-foreground">
+            Evaluation metrics computed from canonical daily series
+          </span>
+        </div>
+
+        {/* Benchmark Comparability Notice Banner */}
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3.5 text-xs text-amber-200">
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-semibold text-amber-300">
+                Benchmark Comparability Notice: Differing Evaluation Horizons
+              </p>
+              <p className="leading-relaxed text-amber-200/90">
+                Strategy A, Bitcoin, and Ethereum are evaluated over the full 10.0-year dataset (2016-11-09 → 2026-11-09).
+                Solana buy-and-hold begins on its first canonical observation date (2020-04-10, 6.6-year horizon).
+                Solana&apos;s higher CAGR (98.56% over 6.6 yrs) reflects this shorter, post-launch bull cycle and cannot be directly compared to 10-year CAGRs.
+                For a strictly fair comparison across all three assets over an identical evaluation window, visit the{" "}
+                <Link href="/markets" className="underline font-semibold text-amber-100 hover:text-white">
+                  Fair Common-Start Comparison on Markets
+                </Link>.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <DataTable
           columns={comparisonColumns}
           rows={comparisonRows}
@@ -799,7 +902,7 @@ export function DashboardClient() {
           loading={loading && !backtest}
           emptyTitle="No benchmark comparison loaded"
           emptyDescription="Run the reference strategy backtest to view benchmark metrics."
-          caption="Note: Solana buy-and-hold starts on its first valid observation (2020-04-10); Bitcoin and Ethereum start on 2016-11-09."
+          caption="Note: Solana buy-and-hold begins on 2020-04-10 (6.6-year horizon); Strategy A, Bitcoin, and Ethereum span the full 10.0-year history (2016-11-09 to 2026-11-09)."
         />
       </section>
 

@@ -58,6 +58,7 @@ export interface HealthResponse {
 
 export interface DailyAssetPoint {
   date: string;
+  timestamp?: number;
   Bitcoin: number | null;
   Ethereum: number | null;
   Solana: number | null;
