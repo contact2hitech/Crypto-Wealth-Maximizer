@@ -1,22 +1,48 @@
-# Current Phase — Phase 3: Dashboard and Markets Integration
+# Current Phase — Phase 4: Strategy Lab, Risk Lab and Robustness Integration
 
-- **Phase**: `PHASE 3`
-- **Status**: `COMPLETED — AWAITING EXTERNAL REVIEW`
+- **Phase**: `PHASE 4`
+- **Status**: `IN PROGRESS`
 - **Branch**: `v2.0-nextjs-migration`
-- **Authorized By**: External Technical Review (`Phase 2 Approved`, `2026-11-12`)
+- **Authorized By**: Project Owner Formal Approval & External Technical Review (`2026-11-16`)
+- **Phase 3 Gate**: Formally Approved and Closed (Reviewed commit `3e814a5`, closure verification commit `dca3fad`, verdict `ACCEPTED`)
 
-## Phase 3 Objective
-Integrate `/dashboard` and `/markets` with the existing FastAPI backend endpoints (`POST /api/backtest/run`, `GET /api/markets/prices`, `GET /api/markets/summary`) using Recharts visualizations, backend-computed KPIs and tables, date-range query filtering, pagination for large tables, extrema-preserving chart decimation for responsive rendering, and full research/provenance disclosures without duplicating financial logic in TypeScript.
+## Phase 4 Objective
+Implement three fully functional Next.js App Router modules:
+1. **Strategy Lab** (`/strategy-lab`): Interactive parameter controls, `POST /api/backtest/run`, `POST /api/backtest/compare`, `POST /api/backtest/practical`, and `POST /api/backtest/hindsight` (strictly labeled as non-investable upper bound), continuous numeric time-scale equity curves, 4-mode protection comparisons, Strategy A/B/C baseline comparison, and paginated trade history.
+2. **Risk Lab** (`/risk-lab`): Connect to `POST /api/risk/protection` (`include_daily_trace: true`), displaying maximum drawdown, annualized volatility, Sharpe ratio, daily underwater drawdown area chart, protection exit counts, average/median/worst exit drawdown, trigger overshoot analysis, paginated execution trace, and daily-close vs intraday stop disclosures.
+3. **Robustness** (`/robustness`): Connect to `POST /api/robustness/analyze`, displaying fixed-period walk-forward analysis across Development (2016–2022), Validation (2023–2024), and Test (2025–2026) periods (honestly highlighting negative Test results), causal Bitcoin market regimes, asset exposure attribution, protection exit summary, and the predeclared 3×3 parameter sensitivity grid.
+4. **Deferred Phase 3 Review Polish**: Replace hardcoded Solana date strings with backend-derived metadata, centralize `horizon_years` sourcing, and extract the benchmark comparison row builder into `frontend/lib/formatters/benchmarkComparisons.ts` with direct unit tests.
 
 ## Task Checklist
-- [x] Add canonical v1.0 reference configuration (`frontend/lib/constants/referenceConfig.ts`) and extrema-preserving chart sampling helper (`frontend/lib/charts/downsample.ts`, normal `maxPoints` budget enforcement with intentional mandatory-boundary overflow exception).
-- [x] Enhance `DataTable` (`frontend/components/common/DataTable.tsx`) with optional `pageSize` pagination for large tables (switching history & crossovers).
-- [x] Integrate `/dashboard` (`DashboardClient.tsx`) with `POST /api/backtest/run` (`include_daily_trace: false`) and `GET /api/markets/summary`: all 9 KPIs, Recharts Equity Curve vs BTC/ETH/SOL benchmarks (Linear/Log toggle), Daily Underwater Drawdown chart, Ending Allocation, Configuration Summary, Market Overview, Benchmark Table, Paginated Switch History, and Research Warnings.
-- [x] Integrate `/markets` (`MarketsClient.tsx`) with `GET /api/markets/prices` and `GET /api/markets/summary`: Latest Close Cards, Date-Range Controls + Presets + Validation, Historical USD Prices, Normalized Performance (`100 = first obs`), Common-Start Comparison (`2020-04-10 = 100`, `connectNulls={false}`), Buy-and-Hold Table, Paginated Crossovers Table, Per-Asset Data Quality Audit Table, and Ethereum/Solana Provenance Disclosures.
-- [x] Add Phase 3 unit tests (`frontend/tests/phase3Helpers.test.mts` and `frontend/tests/dashboardMarkets.test.mts`, `13` tests) including multi-series multi-scale extrema preservation, RangeError budget validation, normal budget enforcement, mandatory-boundary overflow tests, continuous numeric time-axis formatters, and benchmark table evaluation period transformations; commit reproducible Playwright E2E harness (`frontend/e2e/verify_phase3.mjs`, `npm run test:e2e`).
-- [x] Address external technical review observations: benchmark comparability notice and period column, continuous numeric time scale (`scale="time"`) with linear interpolation (`type="linear"`), E2E clean-port fail-fast safety, dynamic configuration card binding, in-sample research baseline banner, and explanation of 9 KPIs across 8 responsive cards.
-- [x] Verify `npm test` (`16/16`), `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test:e2e`, `backend/tests` (`21/21`), and `tests` (`26/26`).
+- [ ] Address three deferred Phase 3 review observations in `frontend/lib/formatters/benchmarkComparisons.ts`, `DashboardClient.tsx`, and `dashboardMarkets.test.mts`.
+- [ ] Implement Strategy Lab (`/strategy-lab`, `StrategyLabClient.tsx`):
+  - [ ] Configuration panel with validated controls matching backend schemas.
+  - [ ] Reset to reference configuration and Run Backtest actions.
+  - [ ] Connect to `POST /api/backtest/run`, `POST /api/backtest/compare`, `POST /api/backtest/practical`, and `POST /api/backtest/hindsight`.
+  - [ ] Strategy performance KPIs and equity curve with BTC/ETH/SOL benchmarks on numeric time axis.
+  - [ ] 4-mode protection comparison table and practical strategy baseline table.
+  - [ ] Perfect-hindsight upper bound card with prominent `PERFECT HINDSIGHT — NON-INVESTABLE UPPER BOUND` warning.
+  - [ ] Paginated switching history (`pageSize=10`) and cash allocation summary.
+- [ ] Implement Risk Lab (`/risk-lab`, `RiskLabClient.tsx`):
+  - [ ] Connect to `POST /api/risk/protection` with `include_daily_trace: true`.
+  - [ ] Max drawdown, volatility, Sharpe, cash days, and exit summary KPIs.
+  - [ ] Daily underwater drawdown area chart with continuous numeric time axis.
+  - [ ] Trigger overshoot and gap analysis table.
+  - [ ] Paginated protection diagnostics and daily drawdown execution trace tables.
+  - [ ] Explicit disclosures regarding daily-close execution, intraday gaps, and transaction friction.
+- [ ] Implement Robustness (`/robustness`, `RobustnessClient.tsx`):
+  - [ ] Connect to `POST /api/robustness/analyze`.
+  - [ ] Walk-forward fixed research periods table honestly displaying negative Test-period results.
+  - [ ] Causal Bitcoin market regimes table and metrics.
+  - [ ] Asset exposure & return attribution table.
+  - [ ] Predeclared 3×3 parameter sensitivity grid.
+  - [ ] Limitations and methodology disclosures.
+- [ ] Add unit tests for Strategy Lab, Risk Lab, and Robustness transformations (`frontend/tests/`).
+- [ ] Extend Playwright E2E test harness (`frontend/e2e/verify_phase4.mjs`) to verify all three routes, interactive runs, chart rendering, mobile layouts, and clean-port safety.
+- [ ] Run full regression suite: `npm test`, `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test:e2e`, `backend/tests` (`21/21`), and `tests` (`26/26`).
+- [ ] Verify zero backend/engine/CSV modifications.
+- [ ] Create `docs/migration/PHASE_04_REPORT.md` and update all migration tracking documentation.
 
-## Exit Gate Status
-- All Phase 3 Dashboard, Markets, and regression checks passed.
-- Paused here after pushing to `v2.0-nextjs-migration` awaiting external review in `docs/migration/NEXT_ACTIONS.md` before beginning Phase 4.
+## Phase Gate Status
+- Phase 3: FORMALLY APPROVED AND CLOSED (`2026-11-16`).
+- Phase 4: IN PROGRESS (`2026-11-16`).

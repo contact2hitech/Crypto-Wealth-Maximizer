@@ -148,8 +148,9 @@ Visually inspected screenshots in scratch folder: `phase3_dashboard_desktop.png`
 - [x] Pre-launch `null` Solana observations preserved (`connectNulls={false}`) and Ethereum historical provenance caveat clearly disclosed.
 - [x] Zero financial metric calculations performed in TypeScript; zero fabricated data.
 - [x] `npm test` (`16/16`), `npx tsc --noEmit`, `npm run lint`, `npm run build`, Playwright live integration on clean ports, `backend/tests` (`21/21`), and `tests` (`26/26`) all pass.
-- [x] Phase 3 set to `COMPLETED — AWAITING EXTERNAL REVIEW`; Phase 4 not started.
+- [x] Phase 3 formally approved and closed (`2026-11-16`); Phase 4 authorized and active.
 
-## 15. Recommended Next Steps
-1. Review Phase 3 Dashboard and Markets implementation and `docs/migration/PHASE_03_REPORT.md` on GitHub (`v2.0-nextjs-migration`).
-2. Approve **Phase 4 — Strategy Lab, Risk Lab and Robustness** in `docs/migration/NEXT_ACTIONS.md` when ready to proceed.
+## 15. Sign-Off & Phase Transition
+- **External Re-Review**: Verdict `ACCEPTED` ([PHASE_03_CLOSURE_VERIFICATION.md](./PHASE_03_CLOSURE_VERIFICATION.md), commit `dca3fad`).
+- **Project Owner Decision**: Formally approved and closed on `2026-11-16`.
+- **Phase 4 Status**: Formally authorized and active (`2026-11-16`). Implementation of Strategy Lab, Risk Lab, and Robustness begins on branch `v2.0-nextjs-migration`.
