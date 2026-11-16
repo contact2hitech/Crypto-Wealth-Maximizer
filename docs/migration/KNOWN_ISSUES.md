@@ -26,6 +26,17 @@ This file tracks technical issues, architectural constraints, dataset caveats, a
 ### `KI-016` — Dashboard / Markets `useEffect` Strict Mode Fetch Behavior
 - **Observation**: In development (`reactStrictMode: true`), Dashboard (`POST /api/backtest/run`) and Markets (`GET /api/markets/prices`) run effect setup → cleanup abort → setup remount using per-effect `AbortController`. In production (`next build` / `next start`), Strict Mode does not double-invoke effects, and FastAPI's `BoundedResponseCache` makes repeat queries fast (`~166–170 ms` warm).
 
+### `KI-017` — Multi-Strategy & Multi-Mode Cold Simulation Latency *(Mitigated in Phase 4)*
+- **Observation**: Un-cached execution of `POST /api/backtest/compare` (evaluating 4 protection modes) and `POST /api/backtest/practical` (evaluating 3 multi-indicator strategies) across the complete 3,653-day historical dataset takes ~15–18 seconds in Python.
+- **Phase 4 Mitigation**:
+  - Frontend renders tab-level loading spinners with non-blocking async execution.
+  - E2E Playwright test harness applies 45-second timeout budgets for heavy computation tabs.
+  - FastAPI's `BoundedResponseCache` caches responses in memory; subsequent queries with identical parameters return in <200ms.
+
+### `KI-018` — Playwright Automated Server Launch Timing on Windows *(Mitigated in Phase 4)*
+- **Observation**: In `frontend/e2e/verify_phase4.mjs`, cold startup of Uvicorn backend and Next.js Turbopack dev server on Windows with filesystem caching can take up to 20–30 seconds.
+- **Phase 4 Mitigation**: Configured `waitForHttp` timeout to 60s with `--log-level info` to surface startup progress in logs and eliminate false-positive timeouts.
+
 ### `KI-012` — Starlette `TestClient` / `httpx` deprecation warning in test logs
 - **Observed**: Informational warning only in Python `TestClient` runs; all 21 backend tests pass.
 

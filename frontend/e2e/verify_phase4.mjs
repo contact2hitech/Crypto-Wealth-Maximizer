@@ -84,7 +84,7 @@ function startBackend(pythonExe) {
       "--port",
       "8000",
       "--log-level",
-      "warning",
+      "info",
     ],
     { cwd: REPO_ROOT, stdio: "pipe" }
   );
@@ -164,7 +164,7 @@ try {
   frontendProc.stdout?.on("data", (d) => console.log("[frontend stdout]", d.toString().trim()));
   frontendProc.stderr?.on("data", (d) => console.error("[frontend stderr]", d.toString().trim()));
 
-  await waitForHttp("http://127.0.0.1:8000/api/health", () => backendExitReason, 30000);
+  await waitForHttp("http://127.0.0.1:8000/api/health", () => backendExitReason, 60000);
   await waitForHttp("http://localhost:3000/dashboard", () => frontendExitReason ?? backendExitReason, 60000);
   console.log("Servers ready for Phase 4 integration tests.");
 

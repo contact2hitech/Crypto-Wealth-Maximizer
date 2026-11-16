@@ -4,11 +4,12 @@
 - **Current Phase**: `PHASE_04_COMPLETED_AWAITING_REVIEW`
 - **Phase 3**: FORMALLY APPROVED AND CLOSED (`2026-11-16`)
   - External re-review verdict: `ACCEPTED` ([PHASE_03_CLOSURE_VERIFICATION.md](./PHASE_03_CLOSURE_VERIFICATION.md))
-- **Phase 4**: COMPLETED — AWAITING EXTERNAL REVIEW (`2026-11-16`)
+- **Phase 4**: COMPLETED — AWAITING EXTERNAL TECHNICAL REVIEW (`2026-11-16`)
   - Implementation Commit: `0e411f0` (`feat(phase4): implement Strategy Lab, Risk Lab, and Robustness modules`)
   - Report: [PHASE_04_REPORT.md](./PHASE_04_REPORT.md)
+  - Review Package: [PHASE_04_EXTERNAL_REVIEW.md](./PHASE_04_EXTERNAL_REVIEW.md)
   - Scope Completed: Strategy Lab (`/strategy-lab`), Risk Lab (`/risk-lab`), Robustness (`/robustness`)
-- **Phase 5**: NOT STARTED (Awaiting external review sign-off and project-owner authorization)
+- **Phase 5**: LOCKED — REQUIRES EXTERNAL REVIEW SIGN-OFF AND PROJECT-OWNER AUTHORIZATION
 
 ---
 

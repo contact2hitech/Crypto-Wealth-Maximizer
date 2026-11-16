@@ -47,5 +47,5 @@ Implement three fully functional Next.js App Router modules:
 
 ## Phase Gate Status
 - Phase 3: FORMALLY APPROVED AND CLOSED (`2026-11-16`).
-- Phase 4: COMPLETED — AWAITING EXTERNAL REVIEW (`2026-11-16`).
-- Phase 5: NOT STARTED (Awaiting Phase 4 external review sign-off and authorization).
+- Phase 4: COMPLETED — AWAITING EXTERNAL TECHNICAL REVIEW (`2026-11-16`).
+- Phase 5: LOCKED — REQUIRES EXTERNAL REVIEW SIGN-OFF AND PROJECT-OWNER AUTHORIZATION.

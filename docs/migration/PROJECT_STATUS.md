@@ -3,7 +3,7 @@
 - **Repository**: `https://github.com/contact2hitech/Crypto-Wealth-Maximizer`
 - **Active Branch**: `v2.0-nextjs-migration`
 - **Base `main` Commit**: `6b1a6f9` (`Initial release: Crypto Wealth Maximizer v1.0`)
-- **Current Phase**: `Phase 4 — Strategy Lab, Risk Lab and Robustness Integration` (**COMPLETED — AWAITING EXTERNAL REVIEW**)
+- **Current Phase**: `Phase 4 — Strategy Lab, Risk Lab and Robustness Integration` (**COMPLETED — AWAITING EXTERNAL TECHNICAL REVIEW**)
 - **Last Updated**: `2026-11-16`
 
 ## Phase Progress Overview
@@ -14,8 +14,8 @@
 | Phase 1 | Python backend and FastAPI foundation | Completed | Approved (`2026-11-12`) |
 | Phase 2 | Next.js frontend foundation | Completed | Approved (`2026-11-12`, External Technical Review) |
 | Phase 3 | Dashboard and Markets integration | Completed | FORMALLY APPROVED AND CLOSED (`2026-11-16`, Verdict: ACCEPTED at `dca3fad`) |
-| Phase 4 | Strategy Lab, Risk Lab and Robustness | Completed | COMPLETED — AWAITING EXTERNAL REVIEW (`2026-11-16`, Commit `0e411f0`) |
-| Phase 5 | Reports, QA and release preparation | Not started | Pending Phase 4 external review sign-off |
+| Phase 4 | Strategy Lab, Risk Lab and Robustness | Completed | COMPLETED — AWAITING EXTERNAL TECHNICAL REVIEW (`2026-11-16`, Commit `0e411f0`) |
+| Phase 5 | Reports, QA and release preparation | Not started | LOCKED — REQUIRES EXTERNAL REVIEW SIGN-OFF AND PROJECT-OWNER AUTHORIZATION |
 | Phase 6 | Final technical audit and v2.0 handover | Not started | Pending Phase 5 completion |
 
 ## Latest Verification Summary (Observed `2026-11-16`)
@@ -41,3 +41,4 @@
 - [PHASE_03_EXTERNAL_REVIEW_CLOSURE.md](./PHASE_03_EXTERNAL_REVIEW_CLOSURE.md)
 - [PHASE_03_CLOSURE_VERIFICATION.md](./PHASE_03_CLOSURE_VERIFICATION.md)
 - [PHASE_04_REPORT.md](./PHASE_04_REPORT.md)
+- [PHASE_04_EXTERNAL_REVIEW.md](./PHASE_04_EXTERNAL_REVIEW.md)
