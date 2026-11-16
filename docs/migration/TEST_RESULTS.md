@@ -4,6 +4,86 @@ All results below were directly executed and observed in the local environment (
 
 ---
 
+## Phase 4 Verification (Strategy Lab, Risk Lab and Robustness Integration, `2026-11-16`)
+
+### 1. Frontend Unit Tests (`npm test`)
+Command (inside `frontend/`):
+```powershell
+npm test --prefix frontend   # runs: node --test tests/*.test.mts
+```
+Result: **PASS (`22 / 22` tests in `1.60s`)**:
+- `healthLifecycle.test.mts` (`3 / 3`): React Strict Mode lifecycle, stale request protection, deduplication & offline/retry recovery.
+- `phase3Helpers.test.mts` (`8 / 8`): Reference config matching, downsample boundary preservation, independent multi-series extrema without scale occlusion, RangeError on non-positive maxPoints, and mandatory-boundary overflow exceptions.
+- `dashboardMarkets.test.mts` (`5 / 5`): Chart timestamp formatting, linear monotonicity, dynamic benchmark evaluation periods, Solana partial-window tagging, config fallbacks, and Markets common-start windowing.
+- `phase4Labs.test.mts` (`6 / 6`):
+  - `Strategy Lab form validation rejects invalid date order and non-positive capital`
+  - `Strategy Lab hindsight upper-bound flags preserve non-investable constraints` (`is_hindsight_upper_bound: true`, `is_investable: false`)
+  - `Risk Lab exit overshoot calculation accurately measures drawdown beyond daily trigger`
+  - `Risk Lab daily trace downsampling preserves worst drawdown troughs within requested budget`
+  - `Robustness walk-forward fixed research periods honestly report negative Test period metrics` (Development 144.15%, Validation 111.45%, Test -24.96%)
+  - `Robustness 3x3 sensitivity grid contains exactly 9 scenarios covering strategies A, B, and C`
+
+### 2. Frontend TypeScript, ESLint, and Production Build (`frontend/`)
+- `Push-Location frontend; npx tsc --noEmit; Pop-Location`: **PASS (exit code 0, 0 errors, 27.5s)**
+- `npm run lint --prefix frontend`: **PASS (exit code 0, 0 warnings, 28.0s)**
+- `npm run build --prefix frontend`: **PASS (`Next.js 16.4.6 Turbopack`, compiled in 55.0s, TypeScript in 27.5s, 10/10 static pages generated)**
+  - Routes: `/`, `/_not-found`, `/dashboard`, `/markets`, `/reports`, `/risk-lab`, `/robustness`, `/strategy-lab`
+
+### 3. Reproducible Playwright End-to-End Integration Verification (`frontend/e2e/verify_phase4.mjs`)
+Command:
+```powershell
+node frontend/e2e/verify_phase4.mjs
+```
+Executed with automated background service startup on clean, unoccupied ports (verified via pre-flight `checkPortAvailable` for ports 8000 & 3000) against `uvicorn backend.main:app --port 8000` and `npm --prefix frontend run dev -- --port 3000` in headless Microsoft Edge (`msedge.exe`):
+- **Strategy Lab (`/strategy-lab`)**:
+  - Interactive parameter controls loaded with reference defaults (Strategy A, Monthly, 30d hold, 10% threshold, 10 bps fee, 20% DD stop, 0% recovery, Invest immediately in Bitcoin).
+  - Executed all 4 backtest endpoints: `POST /api/backtest/run`, `POST /api/backtest/compare`, `POST /api/backtest/practical`, and `POST /api/backtest/hindsight`.
+  - Reconciled 8 KPI cards: `$1,480.00` initial, `$585,970.46` final, `39,492.60%` total return, `81.89%` CAGR, `-69.94%` max DD, `68.43%` volatility, `1.21` Sharpe, `95 / 1,830` switches / cash days.
+  - Recharts Equity Curve rendered continuous numeric time scale (`scale="time"`) with BTC, ETH, SOL benchmarks and Linear/Log scale toggle.
+  - 4-Mode Protection Table verified (`A – Cash filter only`, `B – Drawdown protection only`, `C – Combined protection`, `D – No cash protection`).
+  - Practical Strategy Table verified (`A: 90-day momentum`, `B: 50/200-day trend + momentum`, `C: 30/90/180-day momentum`).
+  - Paginated switching history (`Page 1 / 10` -> `Page 2 / 10`) verified.
+  - Theoretical Hindsight Upper Bound verified with prominent amber warning banner (`PERFECT HINDSIGHT — NON-INVESTABLE UPPER BOUND`).
+- **Risk Lab (`/risk-lab`)**:
+  - Connected to `POST /api/risk/protection` with `include_daily_trace: true`.
+  - Reconciled 8 risk KPI cards: `-69.94%` max DD, `68.43%` volatility, `1.21` Sharpe, `1,830` cash days, `14` protection exits, `-22.84%` avg exit DD, `-35.81%` worst exit DD, `15.81 pp` max overshoot.
+  - Daily Underwater Drawdown area chart rendered on continuous numeric time scale with configured stop trigger reference line (`#f43f5e` dashed).
+  - Critical Stop-Loss & Intraday Gap Risk disclosure banner verified.
+  - Drawdown Protection Exits & Gap Overshoot Analysis table verified.
+  - Daily Drawdown Execution Trace table verified with pagination (`Page 1 / 244` -> `Page 2 / 244`).
+- **Robustness (`/robustness`)**:
+  - Connected to `POST /api/robustness/analyze`.
+  - Strict Research Honesty banner rendered, highlighting out-of-sample Test period performance deterioration (2025–2026 CAGR `-24.96%`, Sharpe `-0.46`).
+  - Walk-Forward Independent Partition Periods table verified (Development 2016–2022 CAGR `144.15%`, Validation 2023–2024 CAGR `111.45%`, Test 2025–2026 CAGR `-24.96%`).
+  - Causal Bitcoin Market Regimes table verified (Bull Trending, Bear Trending, Sideways/Rangebound).
+  - Asset Exposure & Return Attribution table verified (BTC, ETH, SOL, USD Cash).
+  - Predeclared 3×3 Parameter Sensitivity Grid verified (9 combinations across Strategies A, B, C × 15%, 20%, 25% drawdown stops).
+- **Responsive Mobile Layout (`390x844`)**: Verified on Strategy Lab, Risk Lab, and Robustness with 0 horizontal overflow.
+- **Console & Page Errors**: **0 uncaught page errors and 0 console errors**.
+
+### 4. Backend API & Parity Suite Re-run (`backend/tests`)
+Command:
+```powershell
+.\venv\Scripts\python.exe -m unittest discover -s backend/tests -v
+```
+Result: **PASS (`21 / 21` tests in `133.914s`, `OK`)**
+
+### 5. Existing v1.0 Unit Suite Re-run (`tests`)
+Command:
+```powershell
+.\venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+Result: **PASS (`26 / 26` tests in `99.172s`, `OK`)**
+
+### 6. Backend & Engine Integrity Check
+Command:
+```powershell
+git diff 6b1a6f9 -- backend app.py crypto_engine.py strategy_engine.py optimization_engine.py robustness_engine.py data/crypto_daily_prices.csv
+```
+Result: **PASS (0 files modified, 100% untouched)**
+
+---
+
 ## Phase 3 Verification (Dashboard and Markets Integration, `2026-11-12` — Review Closure `2026-11-15`)
 
 ### 1. Frontend Unit Tests (`npm test`)
