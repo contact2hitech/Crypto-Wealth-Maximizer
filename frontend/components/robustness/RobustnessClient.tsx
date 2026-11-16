@@ -503,8 +503,17 @@ export function RobustnessClient() {
     },
   ];
 
-  const testPeriod = robustnessData?.walk_forward.periods.find((p) =>
-    p.period.toLowerCase().includes("test")
+  const devPeriod = useMemo(
+    () => robustnessData?.walk_forward.periods.find((p) => p.period.toLowerCase().includes("development")),
+    [robustnessData]
+  );
+  const valPeriod = useMemo(
+    () => robustnessData?.walk_forward.periods.find((p) => p.period.toLowerCase().includes("validation")),
+    [robustnessData]
+  );
+  const testPeriod = useMemo(
+    () => robustnessData?.walk_forward.periods.find((p) => p.period.toLowerCase().includes("test")),
+    [robustnessData]
   );
 
   return (
@@ -629,37 +638,57 @@ export function RobustnessClient() {
         </CardContent>
       </Card>
 
-      {/* CRITICAL HONEST RESEARCH BANNER: OUT-OF-SAMPLE TEST PERIOD FINDINGS */}
-      <div className="rounded-lg border-2 border-rose-500/80 bg-rose-500/10 p-4 text-xs text-rose-200">
-        <div className="flex items-start gap-3">
-          <AlertOctagon className="h-6 w-6 shrink-0 text-rose-400 mt-0.5" />
-          <div className="space-y-1.5">
-            <p className="font-bold text-sm text-rose-300 uppercase tracking-wide">
-              Strict Research Honesty: Out-of-Sample Test Period Deterioration
-            </p>
-            <p className="leading-relaxed text-rose-100/90 font-medium">
-              In the held-out out-of-sample Test window (<strong>2025-01-01 → 2026-11-09</strong>), strategy performance deteriorated significantly:
-              CAGR dropped to{" "}
-              <span className="font-mono font-bold text-rose-300">
-                {testPeriod?.cagr_pct !== null && testPeriod?.cagr_pct !== undefined
-                  ? formatPercent(testPeriod.cagr_pct)
-                  : "-24.96%"}
-              </span>{" "}
-              and Sharpe fell to{" "}
-              <span className="font-mono font-bold text-rose-300">
-                {testPeriod?.sharpe_rf0 !== null && testPeriod?.sharpe_rf0 !== undefined
-                  ? formatRatio(testPeriod.sharpe_rf0)
-                  : "-0.46"}
-              </span>.
-              This negative performance occurred due to range-bound chop, false breakouts, and lack of sustained asset trends.
-              Historical in-sample Development performance (+83.67% CAGR) does not guarantee future profitability.
-            </p>
-            <p className="text-[11px] text-rose-300/80 pt-0.5">
-              The research methodology maintains fixed, unadjusted period boundaries to prevent selection bias and overfitting.
-            </p>
+      {/* Walk-Forward Test Period Honesty Banner: Neutral loading skeleton vs Live Backend Data */}
+      {loading && !robustnessData && (
+        <div className="rounded-lg border border-border bg-card/60 p-4 text-xs text-muted-foreground animate-pulse">
+          <div className="flex items-center gap-3">
+            <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+            <span>Loading walk-forward out-of-sample research metrics for {strategy}...</span>
           </div>
         </div>
-      </div>
+      )}
+
+      {robustnessData && testPeriod && (
+        <div className="rounded-lg border-2 border-rose-500/80 bg-rose-500/10 p-4 text-xs text-rose-200">
+          <div className="flex items-start gap-3">
+            <AlertOctagon className="h-6 w-6 shrink-0 text-rose-400 mt-0.5" />
+            <div className="space-y-1.5 flex-1">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-bold text-sm text-rose-300 uppercase tracking-wide">
+                  Strict Research Honesty: Out-of-Sample Test Period Deterioration
+                </p>
+                <Badge variant="outline" className="border-rose-400/30 text-rose-300 font-mono text-[10px]">
+                  Configuration: {robustnessData.configuration.strategy} ({robustnessData.configuration.drawdown_protection_pct}% Stop)
+                </Badge>
+              </div>
+              <p className="leading-relaxed text-rose-100/90 font-medium">
+                In the held-out out-of-sample Test window (<strong>{testPeriod.start_date} → {testPeriod.end_date}</strong>), strategy performance evaluated on fixed unadjusted parameters experienced severe deterioration:
+                CAGR dropped to{" "}
+                <span className="font-mono font-bold text-rose-300">
+                  {testPeriod.cagr_pct !== null ? formatPercent(testPeriod.cagr_pct) : "—"}
+                </span>{" "}
+                (Total Return:{" "}
+                <span className="font-mono font-bold text-rose-300">
+                  {testPeriod.total_return_pct !== null ? formatPercent(testPeriod.total_return_pct) : "—"}
+                </span>
+                ) and Sharpe fell to{" "}
+                <span className="font-mono font-bold text-rose-300">
+                  {testPeriod.sharpe_rf0 !== null ? formatRatio(testPeriod.sharpe_rf0) : "—"}
+                </span>
+                {devPeriod?.cagr_pct !== null && devPeriod?.cagr_pct !== undefined ? (
+                  <>
+                    , in contrast to in-sample Development ({formatPercent(devPeriod.cagr_pct)} CAGR) and Validation ({formatPercent(valPeriod?.cagr_pct ?? 0)} CAGR) periods
+                  </>
+                ) : null}
+                .
+              </p>
+              <p className="text-[11px] text-rose-300/80 pt-0.5">
+                The research methodology maintains fixed, unadjusted partition boundaries (Development 2016–2022, Validation 2023–2024, Test 2025–2026) to prevent selection bias, retrospective curve-fitting, and look-ahead data snooping.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Error state */}
       {error && (

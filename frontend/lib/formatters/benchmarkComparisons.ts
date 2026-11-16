@@ -26,7 +26,7 @@ export interface ComparisonTableRow {
 export interface BenchmarkComparabilityNoticeInfo {
   strategyHorizonYears: string;
   solanaHorizonYears: string;
-  solanaStartDate: string;
+  solanaStartDate: string | null;
   solanaCagrPct: number | null;
   fullStartDate: string;
   fullEndDate: string;
@@ -48,16 +48,16 @@ export function calculateHorizonYears(startDate: string, endDate: string): strin
 
 /**
  * Determine the canonical Solana dataset start date from backend metadata.
- * Prefers explicit argument, then benchmark curve first date, then fallback.
+ * Prefers explicit override from market summary, then benchmark curve first date, then null.
  */
 export function resolveSolanaStartDate(
   backtest: Pick<ConstrainedBacktestResponse, "benchmark_curves">,
   overrideStartDate?: string | null
-): string {
+): string | null {
   if (overrideStartDate) return overrideStartDate;
   const firstSolPoint = backtest.benchmark_curves?.Solana?.[0]?.date;
   if (firstSolPoint) return firstSolPoint;
-  return "2020-04-10";
+  return null;
 }
 
 /**
@@ -95,7 +95,7 @@ export function buildComparisonRows(
 
   const benchmarkRows: ComparisonTableRow[] = backtest.benchmark_summaries.map((b) => {
     const isSolana = b.strategy.toLowerCase().includes("solana");
-    const periodStart = isSolana ? solStart : fullStart;
+    const periodStart = isSolana && solStart ? solStart : fullStart;
     const years = calculateHorizonYears(periodStart, fullEnd);
 
     return {
@@ -103,7 +103,7 @@ export function buildComparisonRows(
       label: b.strategy,
       period_label: `${periodStart} → ${fullEnd}`,
       horizon_years: years,
-      is_partial: isSolana,
+      is_partial: isSolana && Boolean(solStart && solStart !== fullStart),
       final_value_usd: b.final_value_usd,
       total_return_pct: b.total_return_pct,
       cagr_pct: b.cagr_pct,
@@ -138,7 +138,7 @@ export function getBenchmarkComparabilityNotice(
 
   return {
     strategyHorizonYears: calculateHorizonYears(fullStart, fullEnd),
-    solanaHorizonYears: calculateHorizonYears(solStart, fullEnd),
+    solanaHorizonYears: calculateHorizonYears(solStart ?? fullStart, fullEnd),
     solanaStartDate: solStart,
     solanaCagrPct: solSummary?.cagr_pct ?? null,
     fullStartDate: fullStart,

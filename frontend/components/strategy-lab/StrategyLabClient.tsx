@@ -1006,14 +1006,22 @@ export function StrategyLabClient() {
 
             {/* Transaction Cost (bps) */}
             <div className="space-y-1.5">
-              <label htmlFor="fee-bps-select" className="text-muted-foreground font-medium flex items-center gap-1">
+              <label htmlFor="fee-bps-select" className="text-muted-foreground font-medium flex items-center justify-between gap-1">
                 <span>Transaction Fee (bps)</span>
+                {activeTab === "hindsight" && (
+                  <span className="text-[10px] text-amber-400 font-normal">
+                    (Fee-Free in Hindsight)
+                  </span>
+                )}
               </label>
               <select
                 id="fee-bps-select"
                 value={feeBps}
+                disabled={activeTab === "hindsight"}
                 onChange={(e) => setFeeBps(Number(e.target.value))}
-                className="w-full rounded-md border border-border bg-secondary/60 px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-sky-500"
+                className={`w-full rounded-md border border-border px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-sky-500 ${
+                  activeTab === "hindsight" ? "bg-muted/40 cursor-not-allowed opacity-60" : "bg-secondary/60"
+                }`}
               >
                 {FEE_BPS_OPTIONS.map((opt) => (
                   <option key={opt} value={opt} className="bg-popover text-popover-foreground">
@@ -1650,7 +1658,7 @@ export function StrategyLabClient() {
           <div className="rounded-lg border-2 border-amber-500/80 bg-amber-500/15 p-4 text-xs text-amber-200">
             <div className="flex items-start gap-3">
               <ShieldAlert className="h-6 w-6 shrink-0 text-amber-400 mt-0.5" />
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 flex-1">
                 <p className="font-bold text-sm text-amber-300 uppercase tracking-wide">
                   PERFECT HINDSIGHT — NON-INVESTABLE UPPER BOUND
                 </p>
@@ -1658,6 +1666,9 @@ export function StrategyLabClient() {
                   The dynamic-programming optimizer operates with 100% future price visibility across the entire evaluation horizon.
                   It represents a theoretical mathematical maximum achievable with up to K switches and cannot be achieved in live trading.
                   Never use these hindsight figures for financial expectations or investor materials.
+                </p>
+                <p className="text-[11px] text-amber-300/90 bg-amber-500/20 rounded p-2 border border-amber-500/30">
+                  <strong>Fee &amp; Slippage Caveat:</strong> Theoretical hindsight dynamic programming operates strictly fee-free (0 bps transaction costs, zero taxes, and zero slippage). The strategy fee control does not apply to this calculation.
                 </p>
                 <div className="flex items-center gap-3 pt-1 text-[11px] text-amber-300 font-mono">
                   <span>is_hindsight_upper_bound: true</span>

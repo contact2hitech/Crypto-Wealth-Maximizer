@@ -184,7 +184,7 @@ export function DashboardClient() {
       marketSummary?.asset_quality.find((a) => a.asset.toLowerCase().includes("solana"))
         ?.first_available_date ??
       backtest?.benchmark_curves?.Solana?.[0]?.date ??
-      "2020-04-10"
+      null
     );
   }, [marketSummary, backtest]);
 
@@ -398,7 +398,9 @@ export function DashboardClient() {
           </span>
         </div>
         <span className="text-sky-300/80 font-mono text-[11px]">
-          Evaluation: 2016-11-09 → 2026-11-09 (10.0 yrs)
+          {backtest
+            ? `Evaluation: ${backtest.date_range.start_date} → ${backtest.date_range.end_date} (${calculateHorizonYears(backtest.date_range.start_date, backtest.date_range.end_date)})`
+            : "Evaluation: Canonical Historical Dataset"}
         </span>
       </div>
 
@@ -842,9 +844,9 @@ export function DashboardClient() {
                 Benchmark Comparability Notice: Differing Evaluation Horizons
               </p>
               <p className="leading-relaxed text-amber-200/90">
-                Strategy A, Bitcoin, and Ethereum are evaluated over the full {noticeInfo?.strategyHorizonYears ?? "10.0 yrs"} dataset ({noticeInfo ? `${noticeInfo.fullStartDate} → ${noticeInfo.fullEndDate}` : "2016-11-09 → 2026-11-09"}).
-                Solana buy-and-hold begins on its first canonical observation date ({noticeInfo?.solanaStartDate ?? "2020-04-10"}, {noticeInfo?.solanaHorizonYears ?? "6.6 yrs"} horizon).
-                Solana&apos;s higher CAGR ({noticeInfo?.solanaCagrPct !== null && noticeInfo?.solanaCagrPct !== undefined ? formatPercent(noticeInfo.solanaCagrPct) : "98.56%"} over {noticeInfo?.solanaHorizonYears ?? "6.6 yrs"}) reflects this shorter, post-launch bull cycle and cannot be directly compared to {noticeInfo?.strategyHorizonYears ?? "10.0 yrs"} CAGRs.
+                Strategy A, Bitcoin, and Ethereum are evaluated over the full {noticeInfo?.strategyHorizonYears ?? "canonical"} dataset ({noticeInfo ? `${noticeInfo.fullStartDate} → ${noticeInfo.fullEndDate}` : "full history"}).
+                Solana buy-and-hold begins on its first canonical observation date ({noticeInfo?.solanaStartDate ?? "first observation"}{noticeInfo?.solanaHorizonYears ? `, ${noticeInfo.solanaHorizonYears} horizon` : ""}).
+                Solana&apos;s higher CAGR ({noticeInfo?.solanaCagrPct !== null && noticeInfo?.solanaCagrPct !== undefined ? formatPercent(noticeInfo.solanaCagrPct) : "—"}{noticeInfo?.solanaHorizonYears ? ` over ${noticeInfo.solanaHorizonYears}` : ""}) reflects this shorter, post-launch bull cycle and cannot be directly compared to {noticeInfo?.strategyHorizonYears ?? "full-history"} CAGRs.
                 For a strictly fair comparison across all three assets over an identical evaluation window, visit the{" "}
                 <Link href="/markets" className="underline font-semibold text-amber-100 hover:text-white">
                   Fair Common-Start Comparison on Markets
@@ -861,7 +863,11 @@ export function DashboardClient() {
           loading={loading && !backtest}
           emptyTitle="No benchmark comparison loaded"
           emptyDescription="Run the reference strategy backtest to view benchmark metrics."
-          caption={`Note: Solana buy-and-hold begins on ${noticeInfo?.solanaStartDate ?? "2020-04-10"} (${noticeInfo?.solanaHorizonYears ?? "6.6 yrs"} horizon); Strategy A, Bitcoin, and Ethereum span the full ${noticeInfo?.strategyHorizonYears ?? "10.0 yrs"} history (${noticeInfo ? `${noticeInfo.fullStartDate} to ${noticeInfo.fullEndDate}` : "2016-11-09 to 2026-11-09"}).`}
+          caption={
+            noticeInfo && noticeInfo.solanaStartDate
+              ? `Note: Solana buy-and-hold begins on ${noticeInfo.solanaStartDate} (${noticeInfo.solanaHorizonYears} horizon); Strategy A, Bitcoin, and Ethereum span the full ${noticeInfo.strategyHorizonYears} history (${noticeInfo.fullStartDate} to ${noticeInfo.fullEndDate}).`
+              : "Note: Solana buy-and-hold begins on its first canonical observation date; Bitcoin and Ethereum span the full dataset history."
+          }
         />
       </section>
 
