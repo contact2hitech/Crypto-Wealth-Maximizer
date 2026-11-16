@@ -146,9 +146,13 @@ export function RobustnessClient() {
       }
     }
 
-    void fetchInitial();
+    const timer = setTimeout(() => {
+      void fetchInitial();
+    }, 50);
+
     return () => {
       active = false;
+      clearTimeout(timer);
       controller.abort();
     };
   }, []);
@@ -504,15 +508,15 @@ export function RobustnessClient() {
   ];
 
   const devPeriod = useMemo(
-    () => robustnessData?.walk_forward.periods.find((p) => p.period.toLowerCase().includes("development")),
+    () => robustnessData?.walk_forward?.periods?.find((p) => p.period.toLowerCase().includes("development")),
     [robustnessData]
   );
   const valPeriod = useMemo(
-    () => robustnessData?.walk_forward.periods.find((p) => p.period.toLowerCase().includes("validation")),
+    () => robustnessData?.walk_forward?.periods?.find((p) => p.period.toLowerCase().includes("validation")),
     [robustnessData]
   );
   const testPeriod = useMemo(
-    () => robustnessData?.walk_forward.periods.find((p) => p.period.toLowerCase().includes("test")),
+    () => robustnessData?.walk_forward?.periods?.find((p) => p.period.toLowerCase().includes("test")),
     [robustnessData]
   );
 
@@ -714,7 +718,7 @@ export function RobustnessClient() {
         {/* Walk-Forward Table */}
         <DataTable
           columns={walkForwardColumns}
-          rows={robustnessData?.walk_forward.periods ?? []}
+          rows={robustnessData?.walk_forward?.periods ?? []}
           getRowKey={(row) => row.period}
           loading={loading && !robustnessData}
           emptyTitle="No walk-forward analysis loaded"

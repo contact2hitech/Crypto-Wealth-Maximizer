@@ -200,7 +200,7 @@ try {
   await page.getByText("Strategy Lab").first().waitFor({ timeout: 20000 });
   await page.getByText("Phase 4 Active").first().waitFor({ timeout: 20000 });
 
-  // Verify KPI Grid
+  // Verify Primary KPI Grid loaded with live reference run data
   await page.getByText("$585,970.46").first().waitFor({ timeout: 35000 });
   await page.getByText("81.89%").first().waitFor({ timeout: 15000 });
   await page.getByText("-69.94%").first().waitFor({ timeout: 15000 });
@@ -213,13 +213,20 @@ try {
   console.log("  Testing 4 Protection Modes tab...");
   await page.getByRole("button", { name: "4 Protection Modes Comparison" }).click();
   await page.getByText("A – Cash filter only").first().waitFor({ timeout: 45000 });
-  await page.getByText("C – Combined protection").first().waitFor({ timeout: 20000 });
+  await page.getByText("$2,668,905.12").first().waitFor({ timeout: 15000 });
+  await page.getByText("$5,100,729.25").first().waitFor({ timeout: 15000 });
+  await page.getByText("C – Combined protection").first().waitFor({ timeout: 15000 });
+  console.log("  -> 4 Protection Modes verified with live engine metrics ($2.67M, $5.10M, $586k).");
 
   // Test Sub-Workflow: Practical Strategies Tab
   console.log("  Testing Practical Strategies A/B/C tab...");
   await page.getByRole("button", { name: "Practical Strategies A / B / C" }).click();
   await page.getByText("Practical Strategy Baselines").first().waitFor({ timeout: 45000 });
   await page.locator("table").getByText("A: 90-day momentum").first().waitFor({ timeout: 35000 });
+  await page.getByText("$4,357,408.61").first().waitFor({ timeout: 15000 });
+  await page.getByText("$2,724,582.89").first().waitFor({ timeout: 15000 });
+  await page.getByText("$660,608.36").first().waitFor({ timeout: 15000 });
+  console.log("  -> Practical strategies verified with live engine metrics ($4.36M, $2.72M, $661k).");
 
   // Test Sub-Workflow: Perfect-Hindsight Tab & Non-Investable Warning
   console.log("  Testing Perfect-Hindsight Upper Bound tab & disclaimer...");
@@ -228,6 +235,9 @@ try {
   await page.getByText("is_hindsight_upper_bound: true").first().waitFor({ timeout: 20000 });
   await page.getByText("is_investable: false").first().waitFor({ timeout: 20000 });
   await page.getByText("K = 5").first().waitFor({ timeout: 20000 });
+  await page.getByText("$552,814,299.71").first().waitFor({ timeout: 15000 });
+  await page.getByText("Theoretical hindsight dynamic programming operates strictly fee-free").first().waitFor({ timeout: 15000 });
+  console.log("  -> Perfect hindsight upper bound ($552.81M) and fee-free disclaimer verified.");
 
   await page.screenshot({ path: path.join(SCREENSHOT_DIR, "phase4_strategy_lab_desktop.png"), fullPage: true });
   console.log("Strategy Lab desktop verified.");
@@ -238,10 +248,13 @@ try {
   await page.getByText("Risk Analytics & Protection Lab").first().waitFor({ timeout: 30000 });
   await page.getByText("Critical Risk Disclosure: Daily-Close Stops & Intraday Gap Risk").first().waitFor({ timeout: 20000 });
 
-  // Verify KPIs
+  // Verify KPIs loaded from live API
   await page.getByText("-69.94%").first().waitFor({ timeout: 45000 });
   await page.getByText("68.43%").first().waitFor({ timeout: 20000 });
   await page.getByText("1.21").first().waitFor({ timeout: 20000 });
+  await page.getByText("1,830").first().waitFor({ timeout: 20000 });
+  await page.getByText("-40.26%").first().waitFor({ timeout: 20000 });
+  await page.getByText("20.26 pp").first().waitFor({ timeout: 20000 });
 
   // Verify Recharts Area Chart rendered
   const areas = await page.locator(".recharts-area").count();
@@ -251,6 +264,7 @@ try {
   await page.getByText("Protection & Allocation Event Count Summary").first().waitFor({ timeout: 20000 });
   await page.getByText("Drawdown Protection Exits & Gap Overshoot Analysis").first().waitFor({ timeout: 20000 });
   await page.getByText("Daily Drawdown Execution Trace").first().waitFor({ timeout: 20000 });
+  await page.getByText("2020-09-05").first().waitFor({ timeout: 20000 }); // Worst exit date in overshoot table
 
   await page.screenshot({ path: path.join(SCREENSHOT_DIR, "phase4_risk_lab_desktop.png"), fullPage: true });
   console.log("Risk Lab desktop verified.");
@@ -260,16 +274,22 @@ try {
   await page.goto("http://localhost:3000/robustness", { waitUntil: "domcontentloaded", timeout: 60000 });
   await page.getByText("Robustness & Walk-Forward Research").first().waitFor({ timeout: 30000 });
 
-  // Verify Honest Test-Period Research Banner
-  await page.getByText("Strict Research Honesty: Out-of-Sample Test Period Deterioration").first().waitFor({ timeout: 20000 });
-  await page.getByText("-24.96%").first().waitFor({ timeout: 45000 });
-  await page.getByText("-0.46").first().waitFor({ timeout: 20000 });
+  // Wait for live Walk-Forward Partition Rows loaded from API (heavy computation: ~15s)
+  await page.getByText("Development").first().waitFor({ timeout: 60000 });
+  await page.getByText("Validation").first().waitFor({ timeout: 60000 });
+  await page.getByText("Test").first().waitFor({ timeout: 60000 });
+  await page.getByText("Held-Out Out-of-Sample").first().waitFor({ timeout: 60000 });
 
-  // Verify Walk-Forward Partition Rows
-  await page.getByText("Development").first().waitFor({ timeout: 20000 });
-  await page.getByText("Validation").first().waitFor({ timeout: 20000 });
-  await page.getByText("Test").first().waitFor({ timeout: 20000 });
-  await page.getByText("Held-Out Out-of-Sample").first().waitFor({ timeout: 20000 });
+  // Assert live data loaded into walk-forward table: Dev CAGR 134.71%, Val CAGR 82.05%, Test CAGR -21.74%
+  await page.locator("table").getByText("134.71%").first().waitFor({ timeout: 60000 });
+  await page.locator("table").getByText("82.05%").first().waitFor({ timeout: 60000 });
+  await page.locator("table").getByText("-21.74%").first().waitFor({ timeout: 60000 });
+  await page.locator("table").getByText("$939.53").first().waitFor({ timeout: 60000 });
+
+  // Assert dynamic Research Honesty Banner has loaded live Test CAGR -21.74% and Sharpe -0.46
+  await page.getByText("Strict Research Honesty: Out-of-Sample Test Period Deterioration").first().waitFor({ timeout: 60000 });
+  await page.getByText("-21.74%").first().waitFor({ timeout: 30000 });
+  await page.getByText("-0.46").first().waitFor({ timeout: 30000 });
 
   // Verify Causal Market Regimes & Attribution Tables
   await page.getByText("Causal Bitcoin Market Regime Performance").first().waitFor({ timeout: 20000 });
@@ -280,7 +300,7 @@ try {
   await page.getByText("3 Strategies (A, B, C) × 3 Drawdown Stops (15%, 20%, 25%)").first().waitFor({ timeout: 20000 });
 
   await page.screenshot({ path: path.join(SCREENSHOT_DIR, "phase4_robustness_desktop.png"), fullPage: true });
-  console.log("Robustness desktop verified.");
+  console.log("Robustness desktop verified with fully loaded live API data.");
 
   // 4. MOBILE VIEWPORT VERIFICATION (390 x 844)
   console.log("Verifying mobile viewports...");

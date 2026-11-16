@@ -40,6 +40,7 @@ import {
   buildComparisonRows,
   type ComparisonTableRow,
 } from "@/lib/formatters/benchmarkComparisons";
+import { validateStrategyFormInput } from "@/lib/validation/strategyForm";
 import type {
   ConstrainedBacktestRequest,
   ConstrainedBacktestResponse,
@@ -190,12 +191,9 @@ export function StrategyLabClient() {
 
   // Form Validation
   const validateForm = useCallback((): boolean => {
-    if (startDate > endDate) {
-      setValidationError("Start date must be earlier than or equal to end date.");
-      return false;
-    }
-    if (initialCapital <= 0 || Number.isNaN(initialCapital)) {
-      setValidationError("Initial capital must be a positive number.");
+    const err = validateStrategyFormInput({ startDate, endDate, initialCapital });
+    if (err) {
+      setValidationError(err);
       return false;
     }
     setValidationError(null);

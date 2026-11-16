@@ -33,6 +33,7 @@ import {
   formatRatio,
   formatUsd,
 } from "@/lib/formatters/financial";
+import { validateRiskFormInput } from "@/lib/validation/strategyForm";
 import type {
   DrawdownExitEvent,
   DrawdownTraceRow,
@@ -111,13 +112,14 @@ export function RiskLabClient() {
 
   // Validation
   const validate = useCallback((): boolean => {
-    if (startDate > endDate) {
-      setValidationError("Start date must be earlier than or equal to end date.");
+    const err = validateRiskFormInput({ startDate, endDate, drawdownProtectionPct: ddProtection });
+    if (err) {
+      setValidationError(err);
       return false;
     }
     setValidationError(null);
     return true;
-  }, [startDate, endDate]);
+  }, [startDate, endDate, ddProtection]);
 
   // Execute Analysis
   const runAnalysis = useCallback(async (signal?: AbortSignal) => {
