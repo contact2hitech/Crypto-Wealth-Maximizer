@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --test tests/*.test.mts",
-    "test:e2e": "node e2e/verify_phase3.mjs"
+    "test:e2e": "node e2e/verify_phase4.mjs",
+    "test:e2e:phase3": "node e2e/verify_phase3.mjs"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

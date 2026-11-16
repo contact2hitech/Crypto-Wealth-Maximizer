@@ -5,6 +5,11 @@ import {
   formatAxisTimestamp,
   formatTooltipTimestamp,
 } from "../components/charts/chartFormatters.ts";
+import {
+  buildComparisonRows,
+  calculateHorizonYears,
+  getBenchmarkComparabilityNotice,
+} from "../lib/formatters/benchmarkComparisons.ts";
 import { REFERENCE_BACKTEST_CONFIG } from "../lib/constants/referenceConfig.ts";
 import type {
   BenchmarkSummaryRow,
@@ -110,40 +115,28 @@ test("benchmark table rows correctly tag Solana partial window and compute evalu
     },
   ];
 
-  // Apply the Dashboard benchmark transformation logic
-  const fullStart = mockDateRange.start_date;
-  const fullEnd = mockDateRange.end_date;
-  const fullDays = mockDateRange.row_count;
-  const fullYears = (fullDays / 365.25).toFixed(1);
-
-  const strategyRow = {
-    key: "strategy",
-    label: `${mockSummary.strategy} (Combined Protection)`,
-    period_label: `${fullStart} → ${fullEnd}`,
-    horizon_years: `${fullYears} yrs`,
-    is_partial: false,
-    cagr_pct: mockSummary.cagr_pct,
+  // Execute the shared buildComparisonRows helper directly
+  const mockBacktest = {
+    summary: mockSummary,
+    benchmark_summaries: mockBenchmarkSummaries,
+    date_range: mockDateRange,
+    benchmark_curves: {
+      Solana: [{ date: "2020-04-10", value_usd: 1480, drawdown_pct: 0 }],
+    },
   };
 
-  const benchmarkRows = mockBenchmarkSummaries.map((b) => {
-    const isSolana = b.strategy.toLowerCase().includes("solana");
-    const solStart = "2020-04-10";
-    const periodStart = isSolana ? solStart : fullStart;
-    const startMs = Date.parse(`${periodStart}T00:00:00Z`);
-    const endMs = Date.parse(`${fullEnd}T00:00:00Z`);
-    const years = ((endMs - startMs) / (86400000 * 365.25)).toFixed(1);
+  const allRows = buildComparisonRows(mockBacktest);
+  const strategyRow = allRows[0];
 
-    return {
-      key: b.strategy,
-      label: b.strategy,
-      period_label: `${periodStart} → ${fullEnd}`,
-      horizon_years: `${years} yrs`,
-      is_partial: isSolana,
-      cagr_pct: b.cagr_pct,
-    };
-  });
+  // Also test calculateHorizonYears and getBenchmarkComparabilityNotice
+  assert.equal(calculateHorizonYears("2016-11-09", "2026-11-09"), "10.0 yrs");
+  assert.equal(calculateHorizonYears("2020-04-10", "2026-11-09"), "6.6 yrs");
 
-  const allRows = [strategyRow, ...benchmarkRows];
+  const notice = getBenchmarkComparabilityNotice(mockBacktest);
+  assert.equal(notice.strategyHorizonYears, "10.0 yrs");
+  assert.equal(notice.solanaHorizonYears, "6.6 yrs");
+  assert.equal(notice.solanaStartDate, "2020-04-10");
+  assert.equal(notice.solanaCagrPct, 98.56);
 
   // 1. Verify 4 rows
   assert.equal(allRows.length, 4);

@@ -38,6 +38,11 @@ import type {
   ConstrainedTradeRow,
   MarketSummaryResponse,
 } from "@/types/api";
+import {
+  buildComparisonRows,
+  getBenchmarkComparabilityNotice,
+  type ComparisonTableRow,
+} from "@/lib/formatters/benchmarkComparisons";
 import { ChartContainer } from "@/components/charts/ChartContainer";
 import { ClientChartFrame } from "@/components/charts/ClientChartFrame";
 import {
@@ -72,22 +77,6 @@ interface DrawdownChartRow {
   timestamp: number;
   strategy_dd: number | null;
   bitcoin_dd: number | null;
-}
-
-interface ComparisonTableRow {
-  key: string;
-  label: string;
-  period_label: string;
-  horizon_years: string;
-  is_partial?: boolean;
-  final_value_usd: number | null;
-  total_return_pct: number | null;
-  cagr_pct: number | null;
-  maximum_drawdown_pct: number | null;
-  annualized_volatility_pct: number | null;
-  sharpe_rf0: number | null;
-  switches: number;
-  cash_days: number;
 }
 
 const CHART_MAX_POINTS = 450;
@@ -190,54 +179,24 @@ export function DashboardClient() {
     ]);
   }, [backtest]);
 
+  const solanaStartDate = useMemo(() => {
+    return (
+      marketSummary?.asset_quality.find((a) => a.asset.toLowerCase().includes("solana"))
+        ?.first_available_date ??
+      backtest?.benchmark_curves?.Solana?.[0]?.date ??
+      "2020-04-10"
+    );
+  }, [marketSummary, backtest]);
+
   const comparisonRows = useMemo<ComparisonTableRow[]>(() => {
     if (!backtest) return [];
-    const fullStart = backtest.date_range.start_date;
-    const fullEnd = backtest.date_range.end_date;
-    const fullDays = backtest.date_range.row_count;
-    const fullYears = (fullDays / 365.25).toFixed(1);
+    return buildComparisonRows(backtest, solanaStartDate);
+  }, [backtest, solanaStartDate]);
 
-    const strategyRow: ComparisonTableRow = {
-      key: "strategy",
-      label: `${backtest.summary.strategy} (Combined Protection)`,
-      period_label: `${fullStart} → ${fullEnd}`,
-      horizon_years: `${fullYears} yrs`,
-      is_partial: false,
-      final_value_usd: backtest.summary.final_value_usd,
-      total_return_pct: backtest.summary.total_return_pct,
-      cagr_pct: backtest.summary.cagr_pct,
-      maximum_drawdown_pct: backtest.summary.maximum_drawdown_pct,
-      annualized_volatility_pct: backtest.summary.annualized_volatility_pct,
-      sharpe_rf0: backtest.summary.sharpe_rf0,
-      switches: backtest.summary.switches,
-      cash_days: backtest.summary.cash_days,
-    };
-    const benchmarkRows: ComparisonTableRow[] = backtest.benchmark_summaries.map((b) => {
-      const isSolana = b.strategy.toLowerCase().includes("solana");
-      const solStart = "2020-04-10";
-      const periodStart = isSolana ? solStart : fullStart;
-      const startMs = Date.parse(`${periodStart}T00:00:00Z`);
-      const endMs = Date.parse(`${fullEnd}T00:00:00Z`);
-      const years = ((endMs - startMs) / (86400000 * 365.25)).toFixed(1);
-
-      return {
-        key: b.strategy,
-        label: b.strategy,
-        period_label: `${periodStart} → ${fullEnd}`,
-        horizon_years: `${years} yrs`,
-        is_partial: isSolana,
-        final_value_usd: b.final_value_usd,
-        total_return_pct: b.total_return_pct,
-        cagr_pct: b.cagr_pct,
-        maximum_drawdown_pct: b.maximum_drawdown_pct,
-        annualized_volatility_pct: b.annualized_volatility_pct,
-        sharpe_rf0: b.sharpe_rf0,
-        switches: b.switches,
-        cash_days: b.cash_days,
-      };
-    });
-    return [strategyRow, ...benchmarkRows];
-  }, [backtest]);
+  const noticeInfo = useMemo(() => {
+    if (!backtest) return null;
+    return getBenchmarkComparabilityNotice(backtest, solanaStartDate);
+  }, [backtest, solanaStartDate]);
 
   const latestAllocation = useMemo(() => {
     if (!backtest || backtest.equity_curve.length === 0) return null;
@@ -544,7 +503,7 @@ export function DashboardClient() {
         }
         footnote={
           backtest
-            ? `Rendered ${formatInteger(equityChartData.length)} extrema-preserving chart points from ${formatInteger(backtest.equity_curve.length)} backend daily observations. Solana benchmark begins on 2020-04-10 (connectNulls=false).`
+            ? `Rendered ${formatInteger(equityChartData.length)} extrema-preserving chart points from ${formatInteger(backtest.equity_curve.length)} backend daily observations. Solana benchmark begins on ${solanaStartDate} (connectNulls=false).`
             : undefined
         }
       >
@@ -564,7 +523,7 @@ export function DashboardClient() {
             </span>
             <span className="flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS.solana }} />
-              <span>Solana Buy &amp; Hold (from 2020-04-10)</span>
+              <span>Solana Buy &amp; Hold (from {solanaStartDate})</span>
             </span>
           </div>
           <ClientChartFrame height={320}>
@@ -883,9 +842,9 @@ export function DashboardClient() {
                 Benchmark Comparability Notice: Differing Evaluation Horizons
               </p>
               <p className="leading-relaxed text-amber-200/90">
-                Strategy A, Bitcoin, and Ethereum are evaluated over the full 10.0-year dataset (2016-11-09 → 2026-11-09).
-                Solana buy-and-hold begins on its first canonical observation date (2020-04-10, 6.6-year horizon).
-                Solana&apos;s higher CAGR (98.56% over 6.6 yrs) reflects this shorter, post-launch bull cycle and cannot be directly compared to 10-year CAGRs.
+                Strategy A, Bitcoin, and Ethereum are evaluated over the full {noticeInfo?.strategyHorizonYears ?? "10.0 yrs"} dataset ({noticeInfo ? `${noticeInfo.fullStartDate} → ${noticeInfo.fullEndDate}` : "2016-11-09 → 2026-11-09"}).
+                Solana buy-and-hold begins on its first canonical observation date ({noticeInfo?.solanaStartDate ?? "2020-04-10"}, {noticeInfo?.solanaHorizonYears ?? "6.6 yrs"} horizon).
+                Solana&apos;s higher CAGR ({noticeInfo?.solanaCagrPct !== null && noticeInfo?.solanaCagrPct !== undefined ? formatPercent(noticeInfo.solanaCagrPct) : "98.56%"} over {noticeInfo?.solanaHorizonYears ?? "6.6 yrs"}) reflects this shorter, post-launch bull cycle and cannot be directly compared to {noticeInfo?.strategyHorizonYears ?? "10.0 yrs"} CAGRs.
                 For a strictly fair comparison across all three assets over an identical evaluation window, visit the{" "}
                 <Link href="/markets" className="underline font-semibold text-amber-100 hover:text-white">
                   Fair Common-Start Comparison on Markets
@@ -902,7 +861,7 @@ export function DashboardClient() {
           loading={loading && !backtest}
           emptyTitle="No benchmark comparison loaded"
           emptyDescription="Run the reference strategy backtest to view benchmark metrics."
-          caption="Note: Solana buy-and-hold begins on 2020-04-10 (6.6-year horizon); Strategy A, Bitcoin, and Ethereum span the full 10.0-year history (2016-11-09 to 2026-11-09)."
+          caption={`Note: Solana buy-and-hold begins on ${noticeInfo?.solanaStartDate ?? "2020-04-10"} (${noticeInfo?.solanaHorizonYears ?? "6.6 yrs"} horizon); Strategy A, Bitcoin, and Ethereum span the full ${noticeInfo?.strategyHorizonYears ?? "10.0 yrs"} history (${noticeInfo ? `${noticeInfo.fullStartDate} to ${noticeInfo.fullEndDate}` : "2016-11-09 to 2026-11-09"}).`}
         />
       </section>
 
