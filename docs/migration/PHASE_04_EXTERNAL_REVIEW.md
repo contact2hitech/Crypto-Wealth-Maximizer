@@ -1,14 +1,15 @@
 # Phase 4 Independent External Technical Review Package — Crypto Wealth Maximizer v2.0
 
 - **Branch**: `v2.0-nextjs-migration`
-- **Review Date**: `2026-11-16`
+- **Review Date**: `2026-11-16` (Initial Review) / `2026-11-17` (Corrective Handover)
 - **Scope**: Phase 4 only (Strategy Lab, Risk Lab, Robustness Integration & Deferred Phase 3 Observations Polish)
-- **Status**: **COMPLETED — AWAITING EXTERNAL TECHNICAL REVIEW**
+- **Status**: **CORRECTIONS IMPLEMENTED — AWAITING EXTERNAL RE-REVIEW**
 - **Phase 5 Status**: **LOCKED — REQUIRES EXTERNAL REVIEW SIGN-OFF AND PROJECT-OWNER AUTHORIZATION**
 - **Implementation Commit**: `0e411f0` (`feat(phase4): implement Strategy Lab, Risk Lab, and Robustness modules`)
-- **Review Package Preparation Commit**: Pending on `v2.0-nextjs-migration`
+- **Review Findings Report**: [PHASE_04_EXTERNAL_TECHNICAL_REVIEW.md](./PHASE_04_EXTERNAL_TECHNICAL_REVIEW.md) (Claude, verdict `REJECTED`)
+- **Corrective Actions Report**: [PHASE_04_CORRECTIVE_ACTIONS.md](./PHASE_04_CORRECTIVE_ACTIONS.md)
 
-> **Purpose of this document**: Hand-off package for independent external technical review by Claude / technical reviewers. Section 4 records the exact test suite execution results observed directly. Section 6 provides the live API reconciliation and mathematical integrity proofs. Section 9 provides exact reproduction commands. Section 11 outlines specific points and suggested inspection order for the reviewer.
+> **Purpose of this document**: Hand-off package for independent external technical review by Claude / technical reviewers. Section 4 records the exact test suite execution results observed directly. Section 5 provides the live API reconciliation and mathematical integrity proofs. Section 9 provides exact reproduction commands. Section 10 outlines specific points and suggested inspection order for the reviewer.
 
 ---
 
@@ -148,14 +149,16 @@ All suites were executed locally in Windows PowerShell environment with Python 3
 
 ## 5. API Endpoint Verification
 
+All figures below are directly reproduced from live FastAPI endpoints and Python engines with the reference configuration (Strategy A, Initial Capital $1,480, Monthly rebalance, 30d min hold, 10% threshold, 10 bps fee, 20% DD stop, 0% cash recovery score, Invest immediately in Bitcoin, 2016-11-09 → 2026-11-10):
+
 | Route | Endpoint Method & Path | Query / Request Payload | Verified Backend Output |
 |---|---|---|---|
 | Strategy Lab | `POST /api/backtest/run` | Strategy A, Monthly, 30d hold, 10% threshold, 10 bps fee, 20% DD stop, 0% recovery, Invest immediately in BTC | Final value `$585,970.46`, CAGR `81.89%`, Max DD `-69.94%`, Sharpe `1.21`, Switches `95`, Cash Days `1,830` |
-| Strategy Lab | `POST /api/backtest/compare` | Reference configuration, `include_benchmarks: true` | 4 modes: `A – Cash filter only` ($585,970.46), `B – Drawdown protection only` ($152,438.67), `C – Combined protection` ($585,970.46), `D – No cash protection` ($152,438.67), plus BTC, ETH, SOL benchmarks |
-| Strategy Lab | `POST /api/backtest/practical` | Reference configuration | `A: 90-day momentum` ($585,970.46), `B: 50/200-day trend + momentum` ($53,889.39), `C: 30/90/180-day momentum` ($70,302.73) |
-| Strategy Lab | `POST /api/backtest/hindsight` | `initial_capital: 1480.0`, `max_switches: 5`, `transaction_cost_bps: 10.0` | `$113,383,230.13` (CAGR `228.67%`), `is_hindsight_upper_bound: true`, `is_investable: false` |
-| Risk Lab | `POST /api/risk/protection` | Reference configuration, `include_daily_trace: true` | Max DD `-69.94%`, Volatility `68.43%`, Sharpe `1.21`, Cash Days `1,830`, 14 exits, avg exit DD `-22.84%`, worst exit DD `-35.81%`, max overshoot `15.81 pp`, 3,653 trace rows |
-| Robustness | `POST /api/robustness/analyze` | Reference configuration, `include_sensitivity: true` | Walk-forward: Development CAGR `144.15%`, Validation CAGR `111.45%`, Test CAGR `-24.96%`; 3 Bitcoin regimes; 4 asset attribution rows; 9 sensitivity scenarios |
+| Strategy Lab | `POST /api/backtest/compare` | Reference configuration, `include_benchmarks: true` | `A – Cash filter only`: $2,668,905.12 (CAGR 111.67%, MaxDD -85.63%); `B – Drawdown only`: $661,870.95 (CAGR 84.11%, MaxDD -78.43%); `C – Combined`: $585,970.46 (CAGR 81.89%, MaxDD -69.94%); `D – No protection`: $5,100,729.25 (CAGR 125.83%, MaxDD -91.61%); Benchmarks: BTC $152,438.67, ETH $295,317.15, SOL $135,199.89 |
+| Strategy Lab | `POST /api/backtest/practical` | Reference configuration, 10 bps fee | `Buy & Hold BTC`: $152,438.67 (CAGR 58.97%); `A: 90-day momentum`: $4,357,408.61 (CAGR 122.30%, MaxDD -91.18%); `B: 50/200-day trend + mom`: $2,724,582.89 (CAGR 112.10%, MaxDD -93.14%); `C: 30/90/180-day momentum`: $660,608.36 (CAGR 84.08%, MaxDD -88.86%) |
+| Strategy Lab | `POST /api/backtest/hindsight` | `initial_capital: 1480.0`, `max_switches: 5` (strictly fee-free) | Switch budget $K=5$: `$552,814,299.71` (Return `+37,352,217.55%`, Ending: SOL), `is_hindsight_upper_bound: true`, `is_investable: false` |
+| Risk Lab | `POST /api/risk/protection` | Reference configuration, `include_daily_trace: true` | Max DD `-69.94%`, Volatility `68.43%`, Sharpe `1.21`, Cash Days `1,830`, 40 exits, avg exit DD `-24.02%`, worst exit DD `-40.26%` (2020-09-05), max overshoot `20.26 pp`, 3,653 trace rows |
+| Robustness | `POST /api/robustness/analyze` | Reference configuration, `include_sensitivity: true` | Walk-forward: Development CAGR `134.71%`, Validation CAGR `82.05%`, Test CAGR `-21.74%` (Sharpe `-0.46`, Final `$939.53`); 3 Bitcoin regimes; 4 asset attribution rows; 9 sensitivity scenarios |
 
 ---
 
@@ -180,14 +183,15 @@ All suites were executed locally in Windows PowerShell environment with Python 3
 1. **Theoretical Perfect-Hindsight Upper Bound**:
    - Rendered with an amber warning badge and banner: `PERFECT HINDSIGHT — NON-INVESTABLE UPPER BOUND`.
    - Explicitly notes: "This theoretical upper bound uses full-dataset look-ahead knowledge (perfect hindsight dynamic programming) with $K=5$ switches. It is mathematically non-investable and exists solely to establish the theoretical upper bound of the asset universe."
+   - Discloses fee-free operation: Theoretical dynamic programming operates strictly fee-free (0 bps, no slippage, no taxes); strategy fee control is disabled and annotated on this tab.
    - Flags `is_hindsight_upper_bound: true` and `is_investable: false` are rendered directly in the KPI card.
 2. **Out-of-Sample Test Period Deterioration (2025–2026)**:
-   - Rendered with a prominent amber alert banner on `/robustness`.
-   - Honestly discloses: Development CAGR `144.15%` and Validation CAGR `111.45%`, followed by severe out-of-sample deterioration in the Test period: CAGR `-24.96%` and Sharpe `-0.46`.
-   - Explains that parameters optimized on retrospective historical periods suffer regime-shift deterioration out-of-sample.
+   - Rendered with a prominent alert banner on `/robustness` derived dynamically from live API partition data (`robustnessData.walk_forward.periods`).
+   - Honestly discloses: In-sample Development CAGR `134.71%` and Validation CAGR `82.05%`, followed by severe out-of-sample deterioration in the Test period: CAGR `-21.74%`, total return `-36.52%`, and Sharpe `-0.46`.
+   - Explains that parameters optimized on retrospective historical periods suffer regime-shift deterioration out-of-sample without inventing causal market narratives.
 3. **Daily-Close Signal Execution vs Intraday Gap Risk**:
    - Prominently surfaced on `/risk-lab`.
-   - Explains that the strategy evaluates signals strictly at daily close (00:00 UTC). In fast-moving flash crashes (e.g. March 2020, May 2021), intraday price drops can overshoot the configured 20% stop threshold before the daily close execution fires (worst exit drawdown `-35.81%`, max overshoot `15.81 pp`).
+   - Explains that the strategy evaluates signals strictly at daily close (00:00 UTC). In fast-moving flash crashes, intraday price drops can overshoot the configured 20% stop threshold before the daily close execution fires (worst exit drawdown `-40.26%` on 2020-09-05, max overshoot `20.26 pp`).
 
 ---
 

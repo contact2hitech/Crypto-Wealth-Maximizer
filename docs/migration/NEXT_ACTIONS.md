@@ -1,27 +1,36 @@
-# Next Actions — Phase 4 Completion & External Review Submission
+# Next Actions — Phase 4 Corrective Actions & External Re-Review Handover
 
 ## Authoritative Gate Status
-- **Current Phase**: `PHASE_04_COMPLETED_AWAITING_REVIEW`
+- **Current Phase**: `Phase 4: CORRECTIONS IMPLEMENTED — AWAITING EXTERNAL RE-REVIEW`
 - **Phase 3**: FORMALLY APPROVED AND CLOSED (`2026-11-16`)
   - External re-review verdict: `ACCEPTED` ([PHASE_03_CLOSURE_VERIFICATION.md](./PHASE_03_CLOSURE_VERIFICATION.md))
-- **Phase 4**: COMPLETED — AWAITING EXTERNAL TECHNICAL REVIEW (`2026-11-16`)
-  - Implementation Commit: `0e411f0` (`feat(phase4): implement Strategy Lab, Risk Lab, and Robustness modules`)
-  - Report: [PHASE_04_REPORT.md](./PHASE_04_REPORT.md)
+- **Phase 4**: CORRECTIONS IMPLEMENTED — AWAITING EXTERNAL RE-REVIEW (`2026-11-17`)
+  - Implementation Commit: `0e411f0`
+  - Review Report: [PHASE_04_EXTERNAL_TECHNICAL_REVIEW.md](./PHASE_04_EXTERNAL_TECHNICAL_REVIEW.md) (Claude, verdict `REJECTED`)
+  - Corrective Actions Report: [PHASE_04_CORRECTIVE_ACTIONS.md](./PHASE_04_CORRECTIVE_ACTIONS.md)
   - Review Package: [PHASE_04_EXTERNAL_REVIEW.md](./PHASE_04_EXTERNAL_REVIEW.md)
-  - Scope Completed: Strategy Lab (`/strategy-lab`), Risk Lab (`/risk-lab`), Robustness (`/robustness`)
+  - Phase Report: [PHASE_04_REPORT.md](./PHASE_04_REPORT.md)
+  - Scope Completed & Corrected: Strategy Lab (`/strategy-lab`), Risk Lab (`/risk-lab`), Robustness (`/robustness`)
 - **Phase 5**: LOCKED — REQUIRES EXTERNAL REVIEW SIGN-OFF AND PROJECT-OWNER AUTHORIZATION
 
 ---
 
-## Immediate Next Steps (Phase 4 External Review)
+## Immediate Next Steps (Phase 4 External Re-Review)
 
-1. **Submit for External Technical Review**:
-   - The Phase 4 implementation (commit `0e411f0`) and verification results are submitted for independent external technical review.
-   - Review scope: Strategy Lab, Risk Lab, and Robustness integration, endpoint data reconciliation, time-scale Recharts rendering, research honesty disclaimers, test coverage, and backend immutability.
+1. **Submit for External Technical Re-Review**:
+   - The Phase 4 corrective implementation and full verification results are submitted for independent external technical re-review by Claude.
+   - Recommended Review Focus:
+     - D1: Dynamic derivation of honesty banner in `RobustnessClient.tsx` without hardcoded statistics or unsupported narratives.
+     - D2: Live reporting figures reconciled across all 6 endpoints in `PHASE_04_CORRECTIVE_ACTIONS.md` and `PHASE_04_REPORT.md`.
+     - D3: Live assertions across all Strategy Lab, Risk Lab, and Robustness tabs in `verify_phase4.mjs`.
+     - D4: Shared production validation in `frontend/lib/validation/strategyForm.ts` and non-circular unit tests in `phase4Labs.test.mts`.
+     - D5: Elimination of literal fallbacks in `DashboardClient.tsx` and `benchmarkComparisons.ts`.
+     - D6: Perfect Hindsight fee-free disclaimer and fee control annotation in `StrategyLabClient.tsx`.
+     - D7: Documentation of Playwright caret-color injection causing development hydration warnings in `KNOWN_ISSUES.md`.
 
-2. **Await Review Verdict & Authorization**:
+2. **Await Re-Review Verdict & Project-Owner Authorization**:
    - Maintain branch `v2.0-nextjs-migration` in clean state.
-   - Do NOT begin Phase 5 (Reports, QA and release preparation) until external review is completed and project owner provides formal authorization.
+   - Do NOT begin Phase 5 (Reports, QA and release preparation) until external re-review approves Phase 4 and project owner provides formal authorization.
 
 ---
 

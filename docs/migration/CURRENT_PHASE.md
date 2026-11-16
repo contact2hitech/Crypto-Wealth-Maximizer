@@ -1,11 +1,12 @@
 # Current Phase — Phase 4: Strategy Lab, Risk Lab and Robustness Integration
 
 - **Phase**: `PHASE 4`
-- **Status**: `COMPLETED — AWAITING EXTERNAL REVIEW`
+- **Status**: `CORRECTIONS IMPLEMENTED — AWAITING EXTERNAL RE-REVIEW`
 - **Branch**: `v2.0-nextjs-migration`
-- **Completion Date**: `2026-11-16`
+- **Completion Date**: `2026-11-16` (Implementation) / `2026-11-17` (Review Corrections)
 - **Implementation Commit**: `0e411f0` (`feat(phase4): implement Strategy Lab, Risk Lab, and Robustness modules`)
-- **Authorized By**: Project Owner Formal Approval & External Technical Review (`2026-11-16`)
+- **External Technical Review**: [PHASE_04_EXTERNAL_TECHNICAL_REVIEW.md](./PHASE_04_EXTERNAL_TECHNICAL_REVIEW.md) (Claude, verdict `REJECTED`)
+- **Corrective Actions Report**: [PHASE_04_CORRECTIVE_ACTIONS.md](./PHASE_04_CORRECTIVE_ACTIONS.md)
 - **Phase 3 Gate**: Formally Approved and Closed (Reviewed commit `3e814a5`, closure verification commit `dca3fad`, verdict `ACCEPTED`)
 
 ## Phase 4 Objective
@@ -47,5 +48,5 @@ Implement three fully functional Next.js App Router modules:
 
 ## Phase Gate Status
 - Phase 3: FORMALLY APPROVED AND CLOSED (`2026-11-16`).
-- Phase 4: COMPLETED — AWAITING EXTERNAL TECHNICAL REVIEW (`2026-11-16`).
+- Phase 4: CORRECTIONS IMPLEMENTED — AWAITING EXTERNAL RE-REVIEW (`2026-11-17`).
 - Phase 5: LOCKED — REQUIRES EXTERNAL REVIEW SIGN-OFF AND PROJECT-OWNER AUTHORIZATION.

@@ -37,6 +37,15 @@ This file tracks technical issues, architectural constraints, dataset caveats, a
 - **Observation**: In `frontend/e2e/verify_phase4.mjs`, cold startup of Uvicorn backend and Next.js Turbopack dev server on Windows with filesystem caching can take up to 20–30 seconds.
 - **Phase 4 Mitigation**: Configured `waitForHttp` timeout to 60s with `--log-level info` to surface startup progress in logs and eliminate false-positive timeouts.
 
+### `KI-019` — Playwright Caret-Color Injection Causing React Development Hydration Warning *(Investigated & Documented in Phase 4 Review Closure)*
+- **Observation**: During Playwright E2E testing against Next.js development server (`next dev`), the browser console logged a hydration mismatch warning pointing to `style={{caret-color:"transparent"}}` on form checkboxes.
+- **Investigation & Finding**: Verified that server-rendered HTML and client component source code contain zero inline style attributes. Playwright's `page.screenshot({ fullPage: true })` API automatically injects `caret-color: transparent !important` into input elements prior to rasterization to eliminate blinking cursor artifacts. When captured during client hydration reconciliation, React development mode detects this difference and logs a warning.
+- **Resolution**: Confirmed as a test harness artifact, not an application defect. In production builds (`npm run build` / `next start`), hydration matches cleanly with zero warnings.
+
+### `KI-020` — React Strict Mode Mount Debounce for Heavy Simulation Endpoints *(Mitigated in Phase 4 Review Closure)*
+- **Observation**: In Next.js development mode (`reactStrictMode: true`), components mount, immediately unmount, and remount. For lightweight endpoints, the aborted initial request terminates quickly. For heavy multi-backtest endpoints (`/api/robustness/analyze`, which executes 13 full backtests), the aborted initial request continues executing in Python's threadpool while the second request starts, causing CPU thread contention under Python's Global Interpreter Lock (GIL).
+- **Phase 4 Mitigation**: Added a 50ms initial mount debounce (`setTimeout(..., 50)`) in `RobustnessClient.tsx`. If React Strict Mode unmounts the component immediately, `clearTimeout` cancels the scheduled call before any HTTP request is dispatched, ensuring FastAPI receives exactly one request and executes cleanly in ~13–15 seconds.
+
 ### `KI-012` — Starlette `TestClient` / `httpx` deprecation warning in test logs
 - **Observed**: Informational warning only in Python `TestClient` runs; all 21 backend tests pass.
 

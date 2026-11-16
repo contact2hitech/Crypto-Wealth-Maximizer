@@ -16,12 +16,12 @@ Result: **PASS (`22 / 22` tests in `1.60s`)**:
 - `phase3Helpers.test.mts` (`8 / 8`): Reference config matching, downsample boundary preservation, independent multi-series extrema without scale occlusion, RangeError on non-positive maxPoints, and mandatory-boundary overflow exceptions.
 - `dashboardMarkets.test.mts` (`5 / 5`): Chart timestamp formatting, linear monotonicity, dynamic benchmark evaluation periods, Solana partial-window tagging, config fallbacks, and Markets common-start windowing.
 - `phase4Labs.test.mts` (`6 / 6`):
-  - `Strategy Lab form validation rejects invalid date order and non-positive capital`
-  - `Strategy Lab hindsight upper-bound flags preserve non-investable constraints` (`is_hindsight_upper_bound: true`, `is_investable: false`)
-  - `Risk Lab exit overshoot calculation accurately measures drawdown beyond daily trigger`
-  - `Risk Lab daily trace downsampling preserves worst drawdown troughs within requested budget`
-  - `Robustness walk-forward fixed research periods honestly report negative Test period metrics` (Development 144.15%, Validation 111.45%, Test -24.96%)
-  - `Robustness 3x3 sensitivity grid contains exactly 9 scenarios covering strategies A, B, and C`
+  - `validateStrategyFormInput enforces date ordering, positive capital, and valid formats` (tests production `strategyForm.ts` against real constraints)
+  - `validateRiskFormInput enforces drawdown protection percentage bounds and date range` (tests real production validation)
+  - `calculateExitOvershoot accurately measures gap overshoot beyond stop trigger` (tests production overshoot formula)
+  - `isHindsightNonInvestable strictly enforces non-investable upper bound contracts` (asserts on `is_hindsight_upper_bound: true` and `is_investable: false`)
+  - `calculateHorizonYears computes true calendar horizons from ISO dates` (validates production horizon calculation from `benchmarkComparisons.ts`)
+  - `Risk Lab daily trace downsampling preserves worst drawdown troughs within requested budget` (validates real-world trace trough preservation)
 
 ### 2. Frontend TypeScript, ESLint, and Production Build (`frontend/`)
 - `Push-Location frontend; npx tsc --noEmit; Pop-Location`: **PASS (exit code 0, 0 errors, 27.5s)**

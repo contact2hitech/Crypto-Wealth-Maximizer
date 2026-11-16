@@ -112,21 +112,41 @@ Verified via `git diff 6b1a6f9 -- backend app.py crypto_engine.py strategy_engin
 ## 7. Architecture Decisions
 1. **Zero Arithmetic / Financial Re-implementation in TypeScript**: All financial calculations, trade generation, drawdown tracking, walk-forward slicing, regime attribution, and sensitivity matrices are executed exclusively by the Python engines via FastAPI endpoints. The Next.js frontend strictly formats and displays backend responses.
 2. **Prominent Academic & Research Honesty Standards**:
-   - The theoretical perfect-hindsight optimizer is prominently labeled `PERFECT HINDSIGHT — NON-INVESTABLE UPPER BOUND`, preventing users from mistaking hindsight optimization for an executable strategy.
-   - The walk-forward Test period (2025–2026) displays a persistent amber deterioration notice honestly reporting negative returns (`-24.96%` CAGR, `-0.46` Sharpe).
-   - Intraday gap risks and daily-close evaluation limitations are prominently displayed in Risk Lab.
+   - The theoretical perfect-hindsight optimizer is prominently labeled `PERFECT HINDSIGHT — NON-INVESTABLE UPPER BOUND` and explicitly noted as fee-free (0 bps), preventing users from mistaking hindsight dynamic programming for an executable strategy.
+   - The walk-forward Test period (2025–2026) displays a dynamic honesty notice directly derived from live backend partition data, honestly reporting negative returns (`-21.74%` CAGR, `-0.46` Sharpe).
+   - Intraday gap risks and daily-close evaluation limitations are prominently displayed in Risk Lab (worst exit drawdown `-40.26%`, max overshoot `20.26 pp`).
 3. **Continuous Numeric Time-Scale Recharts Curves**: All equity and drawdown charts use UTC epoch timestamps on continuous numeric linear scales (`scale="time"`, `type="linear"`), eliminating categorical string axis compression across downsampled intervals.
 4. **Isolated Benchmark Helper Layer**: Sourcing `horizon_years` and evaluation date boundaries centrally from backend payload metadata ensures robust comparability without hardcoded assumptions.
 
 ---
 
 ## 8. API Endpoints Consumed & Data Reconciliation
-- **`POST /api/backtest/run`** (Strategy Lab): Reconciled with v1.0 reference results: Final `$585,970.46`, CAGR `81.89%`, Max Drawdown `-69.94%`, Sharpe `1.21`.
-- **`POST /api/backtest/compare`** (Strategy Lab): Reconciled 4 protection modes (`A – Cash filter only`, `B – Drawdown protection only`, `C – Combined protection`, `D – No cash protection`) and 3 benchmarks (`Bitcoin`, `Ethereum`, `Solana`).
-- **`POST /api/backtest/practical`** (Strategy Lab): Reconciled Strategy A (`$585,970.46`), Strategy B (`$53,889.39`), and Strategy C (`$70,302.73`).
-- **`POST /api/backtest/hindsight`** (Strategy Lab): Reconciled theoretical upper bound (`$113,383,230.13`, `228.67%` CAGR) and verified `is_hindsight_upper_bound: true`, `is_investable: false`.
-- **`POST /api/risk/protection`** (Risk Lab): Reconciled risk metrics and daily execution trace (17 columns, 3,653 rows).
-- **`POST /api/robustness/analyze`** (Robustness): Reconciled 3 walk-forward periods (Development 2016–2022 CAGR `144.15%`, Validation 2023–2024 CAGR `111.45%`, Test 2025–2026 CAGR `-24.96%`), 3 Bitcoin market regimes, asset attribution, and 9 sensitivity scenarios.
+All figures below have been directly verified against live FastAPI endpoints and Python engines with the reference configuration (Strategy A, Initial Capital $1,480, Monthly rebalance, 30d min hold, 10% threshold, 10 bps fee, 20% DD stop, 0% cash recovery score, Invest immediately in Bitcoin, 2016-11-09 → 2026-11-10):
+
+- **`POST /api/backtest/run`** (Strategy Lab): Reconciled with v1.0 reference results: Final `$585,970.46`, CAGR `81.89%`, Max Drawdown `-69.94%`, Sharpe `1.21`, Switches `95`, Cash Days `1,830`.
+- **`POST /api/backtest/compare`** (Strategy Lab): Reconciled 4 protection modes:
+  - `A – Cash filter only`: Final `$2,668,905.12`, CAGR `111.67%`, MaxDD `-85.63%`, Sharpe `1.29`
+  - `B – Drawdown protection only`: Final `$661,870.95`, CAGR `84.11%`, MaxDD `-78.43%`, Sharpe `1.22`
+  - `C – Combined protection`: Final `$585,970.46`, CAGR `81.89%`, MaxDD `-69.94%`, Sharpe `1.21`
+  - `D – No cash protection`: Final `$5,100,729.25`, CAGR `125.83%`, MaxDD `-91.61%`, Sharpe `1.33`
+  - Benchmarks: Bitcoin (`$152,438.67`), Ethereum (`$295,317.15`), Solana (`$135,199.89`).
+- **`POST /api/backtest/practical`** (Strategy Lab): Reconciled no-lookahead baselines:
+  - `Buy & hold: Bitcoin`: Final `$152,438.67`, CAGR `58.97%`, MaxDD `-83.40%`
+  - `A: 90-day momentum`: Final `$4,357,408.61`, CAGR `122.30%`, MaxDD `-91.18%`
+  - `B: 50/200-day trend + momentum`: Final `$2,724,582.89`, CAGR `112.10%`, MaxDD `-93.14%`
+  - `C: 30/90/180-day momentum`: Final `$660,608.36`, CAGR `84.08%`, MaxDD `-88.86%`
+- **`POST /api/backtest/hindsight`** (Strategy Lab): Reconciled theoretical upper bound:
+  - Switch budget $K=5$: Final **`$552,814,299.71`** (Total return `+37,352,217.55%`, ending in Solana).
+  - Strictly 0 bps fee-free, `is_hindsight_upper_bound: true`, `is_investable: false`.
+- **`POST /api/risk/protection`** (Risk Lab): Reconciled protection metrics and daily execution trace (3,653 rows):
+  - Total Drawdown Exits: `40`
+  - Average Exit Drawdown: `-24.02%`, Median Exit Drawdown: `-22.66%`
+  - Worst Exit Drawdown: `-40.26%` (2020-09-05)
+  - Average Trigger Overshoot: `4.02 pp`, Maximum Trigger Overshoot: `20.26 pp`
+- **`POST /api/robustness/analyze`** (Robustness): Reconciled 3 independent walk-forward periods:
+  - `Development` (2016-11-09 → 2022-12-31): Final `$279,026.03`, CAGR **`134.71%`**, Sharpe `1.49`, MaxDD `-69.94%`
+  - `Validation` (2023-01-01 → 2024-12-31): Final `$4,896.00`, CAGR **`82.05%`**, Sharpe `1.27`, MaxDD `-41.31%`
+  - `Test` (2025-01-01 → 2026-11-09): Final `$939.53`, CAGR **`-21.74%`**, Sharpe **`-0.46`**, MaxDD `-52.02%`
 
 ---
 
@@ -134,14 +154,28 @@ Verified via `git diff 6b1a6f9 -- backend app.py crypto_engine.py strategy_engin
 
 | Test Suite | Scope | Result | Execution Time |
 |---|---|---|---|
-| Frontend Unit Tests (`npm test --prefix frontend`) | 22 tests (Health, Downsample, Benchmark, Phase 4 Labs) | **22 / 22 PASS** | 1.60s |
-| TypeScript Compiler (`npx tsc --noEmit`) | Full frontend typecheck | **PASS (0 errors)** | 27.5s |
-| ESLint (`npm run lint --prefix frontend`) | Code style & React hooks | **PASS (0 errors, 0 warnings)** | 28.0s |
-| Next.js Production Build (`npm run build --prefix frontend`) | Static page generation (10/10 pages) | **PASS (10/10 static)** | 55.0s |
-| Playwright E2E Integration (`npm run test:e2e --prefix frontend`) | Live desktop & mobile routes, charts, API calls | **PASS (0 errors)** | 62.0s |
-| Backend Regression Suite (`backend/tests`) | 21 API parity and endpoint tests | **21 / 21 PASS** | 133.9s |
-| Legacy v1.0 Regression Suite (`tests`) | 26 Python engine and parity tests | **26 / 26 PASS** | 99.2s |
+| Frontend Unit Tests (`npm test --prefix frontend`) | 22 tests (Health, Downsample, Benchmark, Validation, Phase 4 Labs) | **22 / 22 PASS** | 862ms |
+| TypeScript Compiler (`npx tsc --noEmit`) | Full frontend typecheck | **PASS (0 errors)** | 18.5s |
+| ESLint (`npm run lint --prefix frontend`) | Code style & React hooks | **PASS (0 errors, 0 warnings)** | 22.0s |
+| Next.js Production Build (`npm run build --prefix frontend`) | Static page generation (10/10 pages) | **PASS (10/10 static)** | 48.0s |
+| Playwright E2E Integration (`verify_phase4.mjs`) | Live desktop & mobile routes, charts, API calls | **PASS (0 errors)** | 75.0s |
+| Backend Regression Suite (`backend/tests`) | 21 API parity and endpoint tests | **21 / 21 PASS** | 72.4s |
+| Legacy v1.0 Regression Suite (`tests`) | 26 Python engine and parity tests | **26 / 26 PASS** | 78.4s |
 | Backend & Engine Diff Check | `backend`, `app.py`, engines, `data/` | **0 files modified** | N/A |
+
+---
+
+## 10. Corrective Actions Summary (Post-Review)
+Following independent review findings in `PHASE_04_EXTERNAL_TECHNICAL_REVIEW.md`, all issues D1–D7 were resolved:
+- **D1**: Removed hardcoded banner statistics; dynamically derived from live API with active config badge.
+- **D2**: Reconciled all reporting figures across all 6 endpoints with live backend ground truth.
+- **D3**: Updated Playwright E2E to verify live engine outputs across all tabs.
+- **D4**: Extracted shared validation into `frontend/lib/validation/strategyForm.ts` and eliminated circular unit tests.
+- **D5**: Removed remaining literal fallbacks in `DashboardClient.tsx` and `benchmarkComparisons.ts`.
+- **D6**: Added explicit fee-free disclaimer to Perfect Hindsight tab and annotated fee control.
+- **D7**: Investigated hydration warning and confirmed it as an artifact of Playwright caret-color injection during screenshot capture.
+
+Full details available in [PHASE_04_CORRECTIVE_ACTIONS.md](./PHASE_04_CORRECTIVE_ACTIONS.md).
 
 ---
 
