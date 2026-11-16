@@ -40,6 +40,7 @@ import type {
 } from "@/types/api";
 import {
   buildComparisonRows,
+  calculateHorizonYears,
   getBenchmarkComparabilityNotice,
   type ComparisonTableRow,
 } from "@/lib/formatters/benchmarkComparisons";
