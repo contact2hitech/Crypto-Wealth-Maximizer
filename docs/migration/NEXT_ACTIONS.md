@@ -1,47 +1,51 @@
-# Next Actions — Phase 4 Corrective Actions & External Re-Review Handover
+# Next Actions — Phase 4 Formal Closure & Phase 5 Readiness
 
 ## Authoritative Gate Status
-- **Current Phase**: `Phase 4: CORRECTIONS IMPLEMENTED — AWAITING EXTERNAL RE-REVIEW`
+- **Current Phase**: `Phase 4: FORMALLY APPROVED AND CLOSED`
 - **Phase 3**: FORMALLY APPROVED AND CLOSED (`2026-11-16`)
   - External re-review verdict: `ACCEPTED` ([PHASE_03_CLOSURE_VERIFICATION.md](./PHASE_03_CLOSURE_VERIFICATION.md))
-- **Phase 4**: CORRECTIONS IMPLEMENTED — AWAITING EXTERNAL RE-REVIEW (`2026-11-17`)
+- **Phase 4**: **FORMALLY APPROVED AND CLOSED** (`17 November 2026`)
+  - Formal Project-Owner Approval Date: `17 November 2026`
   - Implementation Commit: `0e411f0`
-  - Review Report: [PHASE_04_EXTERNAL_TECHNICAL_REVIEW.md](./PHASE_04_EXTERNAL_TECHNICAL_REVIEW.md) (Claude, verdict `REJECTED`)
+  - External Re-Review Verdict: `APPROVED WITH MINOR OBSERVATIONS` ([PHASE_04_RE_REVIEW.md](./PHASE_04_RE_REVIEW.md))
+  - Reviewed Commit: `39404cb`
   - Corrective Actions Report: [PHASE_04_CORRECTIVE_ACTIONS.md](./PHASE_04_CORRECTIVE_ACTIONS.md)
-  - Review Package: [PHASE_04_EXTERNAL_REVIEW.md](./PHASE_04_EXTERNAL_REVIEW.md)
-  - Phase Report: [PHASE_04_REPORT.md](./PHASE_04_REPORT.md)
-  - Scope Completed & Corrected: Strategy Lab (`/strategy-lab`), Risk Lab (`/risk-lab`), Robustness (`/robustness`)
-- **Phase 5**: LOCKED — REQUIRES EXTERNAL REVIEW SIGN-OFF AND PROJECT-OWNER AUTHORIZATION
+  - Scope Formally Closed: Strategy Lab (`/strategy-lab`), Risk Lab (`/risk-lab`), Robustness (`/robustness`)
+- **Phase 5**: **LOCKED — REQUIRES EXPLICIT PROJECT-OWNER AUTHORIZATION**
+  - **IMPORTANT NOTICE**: The project owner has **NOT** authorized Phase 5 implementation.
+  - Implementation of Phase 5, Phase 6, public deployment, live trading, or merging into `main` is strictly prohibited until explicit authorization is issued.
 
 ---
 
-## Immediate Next Steps (Phase 4 External Re-Review)
+## Project Backlog (Non-Blocking Observations R1–R4)
 
-1. **Submit for External Technical Re-Review**:
-   - The Phase 4 corrective implementation and full verification results are submitted for independent external technical re-review by Claude.
-   - Recommended Review Focus:
-     - D1: Dynamic derivation of honesty banner in `RobustnessClient.tsx` without hardcoded statistics or unsupported narratives.
-     - D2: Live reporting figures reconciled across all 6 endpoints in `PHASE_04_CORRECTIVE_ACTIONS.md` and `PHASE_04_REPORT.md`.
-     - D3: Live assertions across all Strategy Lab, Risk Lab, and Robustness tabs in `verify_phase4.mjs`.
-     - D4: Shared production validation in `frontend/lib/validation/strategyForm.ts` and non-circular unit tests in `phase4Labs.test.mts`.
-     - D5: Elimination of literal fallbacks in `DashboardClient.tsx` and `benchmarkComparisons.ts`.
-     - D6: Perfect Hindsight fee-free disclaimer and fee control annotation in `StrategyLabClient.tsx`.
-     - D7: Documentation of Playwright caret-color injection causing development hydration warnings in `KNOWN_ISSUES.md`.
+The following non-blocking items from Claude's Phase 4 re-review ([PHASE_04_RE_REVIEW.md](./PHASE_04_RE_REVIEW.md)) are recorded in the backlog for low-priority resolution during Phase 5 or later cleanup:
 
-2. **Await Re-Review Verdict & Project-Owner Authorization**:
-   - Maintain branch `v2.0-nextjs-migration` in clean state.
-   - Do NOT begin Phase 5 (Reports, QA and release preparation) until external re-review approves Phase 4 and project owner provides formal authorization.
+1. **R1 (Low — Unused Validation Helpers)**:
+   - `calculateExitOvershoot` and `isHindsightNonInvestable` in `frontend/lib/validation/strategyForm.ts` are currently exercised only by tests, as the UI displays backend-supplied values directly.
+   - Action: Either integrate them into component-level rendering or relocate them to test utilities during Phase 5 cleanup.
+2. **R2 (Low — Honesty Banner Dynamic Copy)**:
+   - The Robustness banner wording is currently tailored to historical test deterioration ("dropped to" / "severe deterioration").
+   - Action: Generalize copy for hypothetical positive test periods and enhance fallback formatting for missing validation rows (`valPeriod?.cagr_pct`) during Phase 5 UI polish.
+3. **R3 (Low — Static Date Literals)**:
+   - Static string `"Partial Window (Starts 2020-04-10)"` remains in `DashboardClient.tsx:222` and static copy on `/markets`.
+   - Action: Generalize to dynamic date binding via `resolveSolanaStartDate` during Phase 5 polish.
+4. **R4 (Informational — Precision & Documentation)**:
+   - Risk Lab validation error text ("between 1% and 100%") accepts `> 0 and <= 100` (e.g. `0.5%`). Align text and boundary during Phase 5 form review.
+   - Document the 50ms mount debounce in `RobustnessClient` (React Strict Mode GIL contention avoidance).
+   - Verify production-mode browser hydration in an isolated production browser run.
 
 ---
 
-## Pending Phase 5 Implementation Plan (Post-Authorization)
+## Standing Phase 5 Plan (Awaiting Authorization)
 
-Once Phase 4 is approved and Phase 5 is authorized by the project owner:
+When the project owner grants formal authorization for Phase 5 implementation:
 1. **Reports Module (`/reports`, `ReportsClient.tsx`)**:
    - Connect to `GET /api/reports/summary` and `GET /api/reports/markdown`.
    - Comprehensive research summary rendering.
    - Markdown download button invoking `GET /api/reports/markdown` with proper filename.
 2. **End-to-End QA & Polish**:
+   - Address backlog items R1–R4.
    - Full regression across all 5 navigation routes (`/dashboard`, `/markets`, `/strategy-lab`, `/risk-lab`, `/robustness`, `/reports`).
    - Cross-browser and responsive layout verification.
    - Performance benchmarks and production bundle audit.

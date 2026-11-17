@@ -1,13 +1,22 @@
 # Current Phase — Phase 4: Strategy Lab, Risk Lab and Robustness Integration
 
 - **Phase**: `PHASE 4`
-- **Status**: `CORRECTIONS IMPLEMENTED — AWAITING EXTERNAL RE-REVIEW`
+- **Status**: `FORMALLY APPROVED AND CLOSED`
 - **Branch**: `v2.0-nextjs-migration`
-- **Completion Date**: `2026-11-16` (Implementation) / `2026-11-17` (Review Corrections)
+- **Implementation Date**: `2026-11-16`
+- **Corrective Handover Date**: `2026-11-17`
+- **Formal Project-Owner Approval Date**: `17 November 2026`
 - **Implementation Commit**: `0e411f0` (`feat(phase4): implement Strategy Lab, Risk Lab, and Robustness modules`)
-- **External Technical Review**: [PHASE_04_EXTERNAL_TECHNICAL_REVIEW.md](./PHASE_04_EXTERNAL_TECHNICAL_REVIEW.md) (Claude, verdict `REJECTED`)
-- **Corrective Actions Report**: [PHASE_04_CORRECTIVE_ACTIONS.md](./PHASE_04_CORRECTIVE_ACTIONS.md)
-- **Phase 3 Gate**: Formally Approved and Closed (Reviewed commit `3e814a5`, closure verification commit `dca3fad`, verdict `ACCEPTED`)
+- **Verified Head / Reviewed Commit**: `39404cb` (`test(regression): full multi-suite verification and review handover`)
+- **External Technical Re-Review**: [PHASE_04_RE_REVIEW.md](./PHASE_04_RE_REVIEW.md) (Claude, verdict `APPROVED WITH MINOR OBSERVATIONS`)
+- **Prior Review & Corrective Reports**:
+  - Initial Review: [PHASE_04_EXTERNAL_TECHNICAL_REVIEW.md](./PHASE_04_EXTERNAL_TECHNICAL_REVIEW.md) (Verdict `REJECTED`)
+  - Corrective Actions: [PHASE_04_CORRECTIVE_ACTIONS.md](./PHASE_04_CORRECTIVE_ACTIONS.md)
+  - Review Package: [PHASE_04_EXTERNAL_REVIEW.md](./PHASE_04_EXTERNAL_REVIEW.md)
+  - Implementation Report: [PHASE_04_REPORT.md](./PHASE_04_REPORT.md)
+- **Phase 3 Gate**: Formally Approved and Closed (Verdict `ACCEPTED` at `dca3fad`)
+- **Phase 4 Gate**: **FORMALLY APPROVED AND CLOSED** (`17 November 2026`)
+- **Phase 5 Gate**: **LOCKED — REQUIRES EXPLICIT PROJECT-OWNER AUTHORIZATION** (*Project owner has NOT authorized Phase 5 implementation*)
 
 ## Phase 4 Objective
 Implement three fully functional Next.js App Router modules:
@@ -45,8 +54,23 @@ Implement three fully functional Next.js App Router modules:
 - [x] Run full regression suite: `npm test` (`22/22`), `npx tsc --noEmit` (`0 errors`), `npm run lint` (`0 errors, 0 warnings`), `npm run build` (`10/10 static pages`), `npm run test:e2e` (`0 errors`), `backend/tests` (`21/21`), and `tests` (`26/26`).
 - [x] Verify zero backend/engine/CSV modifications.
 - [x] Create `docs/migration/PHASE_04_REPORT.md` and update all migration tracking documentation.
+- [x] Resolve external review defects D1–D7 and verify with Claude's re-review (`APPROVED WITH MINOR OBSERVATIONS` at `39404cb`).
+- [x] Obtain formal project-owner approval for Phase 4 closure (`17 November 2026`).
+
+## Non-Blocking Project Backlog (Observations R1–R4)
+The following non-blocking observations from Claude's Phase 4 re-review ([PHASE_04_RE_REVIEW.md](./PHASE_04_RE_REVIEW.md)) are preserved in the project backlog for Phase 5 or later cleanup:
+- **R1 (Low)**: Integrate or streamline test-only helpers (`calculateExitOvershoot`, `isHindsightNonInvestable`) in `frontend/lib/validation/strategyForm.ts`.
+- **R2 (Low)**: Generalize Robustness banner wording for hypothetical positive test periods and enhance fallback formatting for missing validation rows (`valPeriod?.cagr_pct`).
+- **R3 (Low)**: Generalize remaining static literal `"Partial Window (Starts 2020-04-10)"` copy on Dashboard (`DashboardClient.tsx:222`) and Markets to dynamic date binding.
+- **R4 (Informational)**:
+  - Align Risk Lab validation boundary text ("between 1% and 100%") with validation code (`> 0 and <= 100`).
+  - Document the purpose of the 50ms mount debounce in `RobustnessClient` (React Strict Mode GIL contention avoidance).
+  - Clarify production-mode browser run expectations for hydration warnings.
 
 ## Phase Gate Status
-- Phase 3: FORMALLY APPROVED AND CLOSED (`2026-11-16`).
-- Phase 4: CORRECTIONS IMPLEMENTED — AWAITING EXTERNAL RE-REVIEW (`2026-11-17`).
-- Phase 5: LOCKED — REQUIRES EXTERNAL REVIEW SIGN-OFF AND PROJECT-OWNER AUTHORIZATION.
+- Phase 0: APPROVED
+- Phase 1: APPROVED
+- Phase 2: APPROVED
+- Phase 3: FORMALLY APPROVED AND CLOSED (`2026-11-16`, Verdict: ACCEPTED at `dca3fad`)
+- Phase 4: **FORMALLY APPROVED AND CLOSED** (`17 November 2026`, Re-review verdict: `APPROVED WITH MINOR OBSERVATIONS` at `39404cb`)
+- Phase 5: **LOCKED — REQUIRES EXPLICIT PROJECT-OWNER AUTHORIZATION** (*Project owner has NOT authorized Phase 5 implementation*)

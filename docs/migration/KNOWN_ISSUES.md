@@ -60,6 +60,22 @@ This file tracks technical issues, architectural constraints, dataset caveats, a
 
 ---
 
+## Non-Blocking Phase 4 Re-Review Backlog (R1–R4)
+Preserved from Claude's Phase 4 re-review ([PHASE_04_RE_REVIEW.md](./PHASE_04_RE_REVIEW.md)) for low-priority cleanup in Phase 5 or later:
+
+- **`R1` — Test-only validation helpers in `strategyForm.ts`**:
+  `calculateExitOvershoot` and `isHindsightNonInvestable` are tested in `phase4Labs.test.mts` but not currently imported by UI components (UI displays backend-supplied values directly). Either integrate them into component-level rendering or relocate them to test utilities during Phase 5 cleanup.
+- **`R2` — Generalization of Robustness banner copy**:
+  The banner copy is currently fixed to describe historical test deterioration ("dropped to" / "severe deterioration"). Generalize for hypothetical non-negative test periods and enhance fallback formatting for missing validation rows (`valPeriod?.cagr_pct`) during Phase 5 UI polish.
+- **`R3` — Dynamic resolution of remaining static date copy**:
+  `DashboardClient.tsx:222` and `/markets` static copy mention `"Partial Window (Starts 2020-04-10)"`. Generalize to dynamic date binding via `resolveSolanaStartDate` during Phase 5 polish.
+- **`R4` — Precision, documentation, and hydration notes**:
+  - Align Risk Lab validation error text ("between 1% and 100%") with code boundary (`> 0 and <= 100`).
+  - Document the purpose of the 50ms mount debounce in `RobustnessClient` (React Strict Mode GIL contention avoidance).
+  - Production-mode browser hydration test to be verified in an isolated browser run.
+
+---
+
 ## Resolved Issues
 - `KI-014` *(Resolved in Phase 2)*: Interactive headless Edge Playwright verification active and used across Phases 2–3.
 - `KI-001`..`KI-003`, `KI-005`, `KI-006`, `KI-008`, `KI-010`: Resolved in Phase 1.
